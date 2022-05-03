@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "color.hpp"
 #include "net.hpp"
 
 MACAddress::MACAddress() :
@@ -36,6 +37,8 @@ MACAddress::operator std::string() const
     }
     return result;
 }
+
+const MACAddress MACAddress::BROADCAST_MAC_ADDRESS = MACAddress(0xFFFFFFFFFFFFll);
 
 IPAddress::IPAddress(uint32_t addr) :
     ip_addr(addr)
@@ -70,6 +73,11 @@ IPAddress::operator std::string() const
     return result;
 }
 
+IPAddress IPAddress::applyMask(char mask_size) const
+{
+    return IPAddress(ip_addr & (UINT32_MAX ^ ((1ll << mask_size) - 1)));
+}
+
 NodeNetworkProperty::NodeNetworkProperty() :
     is_loopback_addr_configured(false),
     loopback_addr("0.0.0.0")
@@ -82,7 +90,7 @@ void NodeNetworkProperty::dump() const
     std::cout
         << "  "
         << "lo addr : "
-        << (is_loopback_addr_configured ? static_cast<std::string>(loopback_addr) + "/32" : "unset")
+        << (is_loopback_addr_configured ? getColoredString(static_cast<std::string>(loopback_addr), "Light Red") + "/32" : getColoredString("unset", "Light Gray"))
         << std::endl;
 }
 
@@ -100,7 +108,7 @@ void InterfaceNetworkProperty::dump() const
     std::cout
         << "  "
         << "IP addr : "
-        << (is_ip_addr_configured ? static_cast<std::string>(ip_addr) + "/" + std::to_string(mask) : "unset")
+        << (is_ip_addr_configured ? getColoredString(static_cast<std::string>(ip_addr), "Light Red") + "/" + std::to_string(mask) : getColoredString("unset", "Light Gray"))
         << "  "
         << "MAC : "
         << static_cast<std::string>(mac_addr)

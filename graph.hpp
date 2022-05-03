@@ -99,6 +99,16 @@ public:
      */
     void assignMACAddress();
 
+    const IPAddress &getIPAddress() const
+    {
+        return intf_network_property.getIPAddress();
+    }
+
+    char getMask() const
+    {
+        return intf_network_property.getMask();
+    }
+
     /**
      * @brief
      *
@@ -209,6 +219,8 @@ public:
      *         Returns nullptr when there are no interface specified by given parameter on the interface list.
      */
     Interface *getNodeInterfaceByName(const std::string &if_name);
+
+    Interface *getMatchingSubnetInterface(const std::string &ip_addr);
 
     /**
      * @brief Set the Node Loopback Address object

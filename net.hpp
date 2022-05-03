@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+#include <cstring>
 
 #include "printer.hpp"
 
@@ -21,6 +22,13 @@ public:
     operator uint32_t() const;
     operator std::string() const;
 
+    IPAddress applyMask(char mask_size) const;
+
+    bool operator==(const IPAddress &rhs) const
+    {
+        return static_cast<uint32_t>(*this) == static_cast<uint32_t>(rhs);
+    }
+
 private:
     uint32_t ip_addr;
 };
@@ -31,6 +39,19 @@ public:
     explicit MACAddress(uint64_t val);
 
     operator std::string() const;
+
+    const char *get() const
+    {
+        return mac;
+    }
+
+    bool operator==(const MACAddress &rhs) const
+    {
+        return std::memcmp(mac, rhs.get(), MAC_ADDRESS_BYTE_LENGTH) == 0;
+    }
+
+    static const MACAddress BROADCAST_MAC_ADDRESS;
+
 private:
     static constexpr uint8_t MAC_ADDRESS_BYTE_LENGTH = 6;
     char mac[MAC_ADDRESS_BYTE_LENGTH];
@@ -109,6 +130,11 @@ public:
     const IPAddress &getIPAddress() const
     {
         return ip_addr;
+    }
+
+    char getMask() const
+    {
+        return mask;
     }
 
     /**

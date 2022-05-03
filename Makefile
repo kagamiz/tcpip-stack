@@ -4,7 +4,8 @@ TARGET:test.out
 
 OBJS=graph.o \
 	 topologies.o \
-	 net.o
+	 net.o \
+	 color.o
 
 test.out:testapp.o ${OBJS}
 	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test.out
@@ -20,6 +21,9 @@ topologies.o:topologies.cpp
 
 net.o:net.cpp
 	${CXX} ${CFLAGS} -c -I . net.cpp -o net.o
+
+color.o:color.cpp
+	${CXX} ${CFLAGS} -c -I . color.cpp -o color.o
 
 clean:
 	rm *.o

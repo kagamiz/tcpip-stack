@@ -94,7 +94,7 @@ void Interface::dump() const
 Node::Node(const std::string &name) :
     node_name(name.substr(0, MAX_NODE_NAME_LENGTH))
 {
-    std::fill(begin(intfs), end(intfs), nullptr);
+    std::fill(std::begin(intfs), std::end(intfs), nullptr);
 }
 
 Node::~Node()
@@ -112,19 +112,19 @@ Node::~Node()
 // legacy function
 int32_t Node::getNodeInterfaceAvailableSlot()
 {
-    auto result = std::find_if(begin(intfs), end(intfs), [](Interface *p) -> bool {return !p;});
-    if (result == end(intfs)) {
+    auto result = std::find_if(std::begin(intfs), std::end(intfs), [](Interface *p) -> bool {return !p;});
+    if (result == std::end(intfs)) {
         return -1;
     }
     else {
-        return static_cast<int32_t>(result - begin(intfs));
+        return static_cast<int32_t>(result - std::begin(intfs));
     }
 }
 
 bool Node::hasVacantInterfaceSlot() const
 {
-    auto result = std::find_if(begin(intfs), end(intfs), [](Interface *p) -> bool {return !p;});
-    return result != end(intfs);
+    auto result = std::find_if(std::begin(intfs), std::end(intfs), [](Interface *p) -> bool {return !p;});
+    return result != std::end(intfs);
 }
 
 bool Node::trySetInterfaceToSlot(Interface *intf)
@@ -153,8 +153,40 @@ bool Node::tryRemoveInterfaceFromSlot(Interface *intf)
 
 Interface *Node::getNodeInterfaceByName(const std::string &if_name)
 {
-    auto result = std::find_if(begin(intfs), end(intfs), [&](Interface *intf) {return intf->getName() == if_name;});
-    if (result == end(intfs)) {
+    auto result = std::find_if(
+        std::begin(intfs),
+        std::end(intfs),
+        [&](Interface *intf) {
+            if (!intf) {
+                return false;
+            }
+            return intf->getName() == if_name;
+        }
+    );
+    if (result == std::end(intfs)) {
+        return nullptr;
+    }
+    return *result;
+}
+
+Interface *Node::getMatchingSubnetInterface(const std::string &ip_addr)
+{
+    IPAddress input_ip(ip_addr);
+    auto result = std::find_if(
+        std::begin(intfs),
+        std::end(intfs),
+        [&](Interface *intf) {
+            if (!intf) {
+                return false;
+            }
+            if (!intf->isL3Mode()) {
+                return false;
+            }
+            char mask_size = intf->getMask();
+            return intf->getIPAddress().applyMask(mask_size) == input_ip.applyMask(mask_size);
+        }
+    );
+    if (result == std::end(intfs)) {
         return nullptr;
     }
     return *result;
@@ -259,10 +291,10 @@ Node *Graph::addNode(const std::string &node_name)
 
 bool Graph::insertLinkBetweenTwoNodes(Node *node1, Node *node2, const std::string &from_if_name, const std::string &to_if_name, uint32_t cost)
 {
-    if (std::find(begin(nodes), end(nodes), node1) == end(nodes)) {
+    if (std::find(std::begin(nodes), std::end(nodes), node1) == std::end(nodes)) {
         return false;
     }
-    if (std::find(begin(nodes), end(nodes), node2) == end(nodes)) {
+    if (std::find(std::begin(nodes), std::end(nodes), node2) == std::end(nodes)) {
         return false;
     }
 
@@ -276,8 +308,8 @@ bool Graph::insertLinkBetweenTwoNodes(Node *node1, Node *node2, const std::strin
 
 Node *Graph::getNodeByNodeName(const std::string &node_name)
 {
-    auto result = std::find_if(begin(nodes), end(nodes), [&](Node *node) -> bool { return node->getName() == node_name;});
-    if (result == end(nodes)) {
+    auto result = std::find_if(std::begin(nodes), std::end(nodes), [&](Node *node) -> bool { return node->getName() == node_name;});
+    if (result == std::end(nodes)) {
         return nullptr;
     }
     return *result;
