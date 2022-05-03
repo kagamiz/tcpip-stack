@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <random>
 
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
@@ -40,6 +41,37 @@ const Node *Interface::getNeighbourNode() const
     return nullptr;
 }
 
+void Interface::assignMACAddress()
+{
+    auto calcHashCode = [](const std::string &s) -> uint64_t {
+        uint64_t result = 0;
+        for (const auto &c : s) {
+            result = result * 97 + c;
+        }
+        return result;
+    };
+
+    uint64_t hash = calcHashCode(if_name) * calcHashCode(att_node->getName());
+    std::mt19937 rand_src(hash);
+    std::uniform_int_distribution<uint64_t> rand_dist(0, (1ull << 46) - 1);
+    intf_network_property.setMACAddress(MACAddress(rand_dist(rand_src)));
+}
+
+void Interface::setIPAddress(const std::string &ip_addr, char mask)
+{
+    intf_network_property.setIPAddress(IPAddress(ip_addr), mask);
+}
+
+void Interface::unsetIPAddress()
+{
+    intf_network_property.unsetIPAddress();
+}
+
+bool Interface::isL3Mode() const
+{
+    return intf_network_property.isL3Mode();
+}
+
 void Interface::dump() const
 {
     std::cout
@@ -56,6 +88,7 @@ void Interface::dump() const
     else {
         std::cout << "(undefined)" << std::endl;
     }
+    intf_network_property.dump();
 }
 
 Node::Node(const std::string &name) :
@@ -127,9 +160,36 @@ Interface *Node::getNodeInterfaceByName(const std::string &if_name)
     return *result;
 }
 
+bool Node::setLoopbackAddress(const std::string &ip_addr)
+{
+    node_network_property.setLoopbackAddress(IPAddress(ip_addr));
+    return true;
+}
+
+bool Node::setInterfaceIPAddress(const std::string &if_name, const std::string &ip_addr, char mask)
+{
+    Interface *intf = getNodeInterfaceByName(if_name);
+    if (!intf) {
+        return false;
+    }
+    intf->setIPAddress(ip_addr, mask);
+    return true;
+}
+
+bool Node::unsetInterfaceIPAddress(const std::string &if_name)
+{
+    Interface *intf = getNodeInterfaceByName(if_name);
+    if (!intf) {
+        return false;
+    }
+    intf->unsetIPAddress();
+    return true;
+}
+
 void Node::dump() const
 {
     std::cout << "Node Name = " << node_name << ":" << std::endl;
+    node_network_property.dump();
     for (const auto &intf : intfs) {
         if (!intf) {
             continue;
@@ -164,10 +224,12 @@ Link *Link::tryCreate(Node *node1, Node *node2, const std::string &from_if_name,
     node1->trySetInterfaceToSlot(link->getFromInterface());
     link->getFromInterface()->setNode(node1);
     link->getFromInterface()->setLink(link);
+    link->getFromInterface()->assignMACAddress();
 
     node2->trySetInterfaceToSlot(link->getToInterface());
     link->getToInterface()->setNode(node2);
     link->getToInterface()->setLink(link);
+    link->getToInterface()->assignMACAddress();
 
     return link;
 }
@@ -227,26 +289,4 @@ void Graph::dump() const
     for (const auto &node : nodes) {
         node->dump();
     }
-}
-
-Graph *build_first_topo()
-{
-    Graph *topo = new Graph("Hello World Generic Graph");
-    Node *R0_re = topo->addNode("R0_re");
-    Node *R1_re = topo->addNode("R1_re");
-    Node *R2_re = topo->addNode("R2_re");
-
-    if (!topo->insertLinkBetweenTwoNodes(R0_re, R1_re, "eth0/0", "eth0/1", 1)) {
-        // TODO: error handling
-    }
-
-    if (!topo->insertLinkBetweenTwoNodes(R1_re, R2_re, "eth0/2", "eth0/3", 1)) {
-        // TODO: error handling
-    }
-
-    if (!topo->insertLinkBetweenTwoNodes(R0_re, R2_re, "eth0/4", "eth0/5", 1)) {
-        // TODO: error handling
-    }
-
-    return topo;
 }

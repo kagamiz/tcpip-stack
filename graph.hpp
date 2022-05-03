@@ -9,10 +9,11 @@
 #pragma once
 
 #include <array>
-#include <cctype>
+#include <cstdint>
 #include <list>
 #include <string>
 
+#include "net.hpp"
 #include "printer.hpp"
 
  // forward declaration
@@ -93,6 +94,34 @@ public:
     }
 
     /**
+     * @brief assigns a MAC Address.
+     *
+     */
+    void assignMACAddress();
+
+    /**
+     * @brief
+     *
+     * @param ip_addr
+     * @param mask
+     */
+    void setIPAddress(const std::string &ip_addr, char mask);
+
+    /**
+     * @brief
+     *
+     */
+    void unsetIPAddress();
+
+    /**
+     * @brief
+     *
+     * @return true
+     * @return false
+     */
+    bool isL3Mode() const;
+
+    /**
      * @brief outputs a detail of this interface on the standard output
      *
      */
@@ -100,6 +129,7 @@ public:
 
 private:
     std::string if_name;
+    InterfaceNetworkProperty intf_network_property;
     Node *att_node;
     Link *link;
 
@@ -181,6 +211,35 @@ public:
     Interface *getNodeInterfaceByName(const std::string &if_name);
 
     /**
+     * @brief Set the Node Loopback Address object
+     *
+     * @param ip_addr
+     * @return true
+     * @return false
+     */
+    bool setLoopbackAddress(const std::string &ip_addr);
+
+    /**
+     * @brief Set the Interface IP Address
+     *
+     * @param if_name
+     * @param ip_addr
+     * @param mask
+     * @return true
+     * @return false
+     */
+    bool setInterfaceIPAddress(const std::string &if_name, const std::string &ip_addr, char mask);
+
+    /**
+     * @brief
+     *
+     * @param if_name
+     * @return true
+     * @return false
+     */
+    bool unsetInterfaceIPAddress(const std::string &if_name);
+
+    /**
      * @brief outputs a detail of this node on the standard output
      *
      */
@@ -190,8 +249,8 @@ private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
     static constexpr uint32_t MAX_NODE_NAME_LENGTH = 16;
 
-public:
     std::string node_name;
+    NodeNetworkProperty node_network_property;
     // interface list
     std::array<Interface *, MAX_INTF_PER_NODE> intfs;
 };
