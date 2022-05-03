@@ -1,11 +1,9 @@
 /**
  * @file topologies.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Jayson Sho Toma
+ * @brief constructs topology by using graph APIs.
  * @version 0.1
  * @date 2022-05-03
- *
- * @copyright Copyright (c) 2022
  *
  */
 

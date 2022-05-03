@@ -94,37 +94,48 @@ public:
     }
 
     /**
-     * @brief assigns a MAC Address.
+     * @brief assigns a MAC Address to the interface.
+     *        MAC address is generated randomly by taking its interface name and the node name as the generating parameter.
      *
      */
     void assignMACAddress();
 
+    /**
+     * @brief get the interface's IP address
+     *
+     * @return const IPAddress&
+     */
     const IPAddress &getIPAddress() const
     {
         return intf_network_property.getIPAddress();
     }
 
+    /**
+     * @brief Get the bit length of the subnet mask corresponds to the IP adress of the interface.
+     *
+     * @return bit length of the subnet mask
+     */
     char getMask() const
     {
         return intf_network_property.getMask();
     }
 
     /**
-     * @brief
+     * @brief sets an IP address to the interface.
      *
-     * @param ip_addr
-     * @param mask
+     * @param ip_addr a string which represents an IP address.
+     * @param mask  bit length of the subnet mask.
      */
     void setIPAddress(const std::string &ip_addr, char mask);
 
     /**
-     * @brief
+     * @brief unsets the IP address from this interface.
      *
      */
     void unsetIPAddress();
 
     /**
-     * @brief
+     * @brief checks whether this interface acts as an L3 layer interface.
      *
      * @return true
      * @return false
@@ -132,7 +143,7 @@ public:
     bool isL3Mode() const;
 
     /**
-     * @brief outputs a detail of this interface on the standard output
+     * @brief outputs a detail of this interface on the standard output.
      *
      */
     virtual void dump() const override;
@@ -220,34 +231,39 @@ public:
      */
     Interface *getNodeInterfaceByName(const std::string &if_name);
 
+    /**
+     * @brief Get the interface from the interface list whose subnet matches with given IP address.
+     *
+     * @param ip_addr query parameter IP address
+     * @return returns an intreface whose subnet matches with the given IP address. Returns nullptr when none of the interface matches.
+     */
     Interface *getMatchingSubnetInterface(const std::string &ip_addr);
 
     /**
-     * @brief Set the Node Loopback Address object
+     * @brief Set the Node Loopback Address object.
      *
-     * @param ip_addr
-     * @return true
-     * @return false
+     * @param ip_addr IP address to be set
+     * @return this procedure always succeeds.
      */
     bool setLoopbackAddress(const std::string &ip_addr);
 
     /**
-     * @brief Set the Interface IP Address
+     * @brief Set the IP address to the interface which is specified by the input parameter.
      *
-     * @param if_name
-     * @param ip_addr
-     * @param mask
-     * @return true
-     * @return false
+     * @param if_name name of the interface
+     * @param ip_addr IP address to be set
+     * @param mask bit length of the subnet mask
+     * @return true if setting the IP address succeeds
+     * @return false if the interface `if_name` was not found
      */
     bool setInterfaceIPAddress(const std::string &if_name, const std::string &ip_addr, char mask);
 
     /**
-     * @brief
+     * @brief Unset the IP address from the interface which is specified by the input parameter.
      *
-     * @param if_name
-     * @return true
-     * @return false
+     * @param if_name name of the interface
+     * @return true if unsetting the IP address succeeds
+     * @return false if the interface `if_name` was not found
      */
     bool unsetInterfaceIPAddress(const std::string &if_name);
 

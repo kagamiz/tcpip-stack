@@ -4,9 +4,6 @@
  * @brief Interface class which requires to "dump" the class information on the standard output to the concrete classes.
  * @version 0.1
  * @date 2022-05-03
- *
- * @copyright Copyright (c) 2022
- *
  */
 
 #pragma once
