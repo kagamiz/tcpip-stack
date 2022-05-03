@@ -4,8 +4,8 @@ TARGET:test.out
 
 OBJS=graph.o
 
-test:testapp.o ${OBJS}
-	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test
+test.out:testapp.o ${OBJS}
+	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test.out
 
 testapp.o:testapp.cpp
 	${CXX} ${CFLAGS} -c testapp.cpp -o testapp.o
