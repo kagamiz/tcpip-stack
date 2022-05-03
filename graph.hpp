@@ -9,10 +9,11 @@
 #pragma once
 
 #include <array>
-#include <cctype>
+#include <cstdint>
 #include <list>
 #include <string>
 
+#include "net.hpp"
 #include "printer.hpp"
 
  // forward declaration
@@ -93,13 +94,63 @@ public:
     }
 
     /**
-     * @brief outputs a detail of this interface on the standard output
+     * @brief assigns a MAC Address to the interface.
+     *        MAC address is generated randomly by taking its interface name and the node name as the generating parameter.
+     *
+     */
+    void assignMACAddress();
+
+    /**
+     * @brief get the interface's IP address
+     *
+     * @return const IPAddress&
+     */
+    const IPAddress &getIPAddress() const
+    {
+        return intf_network_property.getIPAddress();
+    }
+
+    /**
+     * @brief Get the bit length of the subnet mask corresponds to the IP adress of the interface.
+     *
+     * @return bit length of the subnet mask
+     */
+    char getMask() const
+    {
+        return intf_network_property.getMask();
+    }
+
+    /**
+     * @brief sets an IP address to the interface.
+     *
+     * @param ip_addr a string which represents an IP address.
+     * @param mask  bit length of the subnet mask.
+     */
+    void setIPAddress(const std::string &ip_addr, char mask);
+
+    /**
+     * @brief unsets the IP address from this interface.
+     *
+     */
+    void unsetIPAddress();
+
+    /**
+     * @brief checks whether this interface acts as an L3 layer interface.
+     *
+     * @return true
+     * @return false
+     */
+    bool isL3Mode() const;
+
+    /**
+     * @brief outputs a detail of this interface on the standard output.
      *
      */
     virtual void dump() const override;
 
 private:
     std::string if_name;
+    InterfaceNetworkProperty intf_network_property;
     Node *att_node;
     Link *link;
 
@@ -181,6 +232,42 @@ public:
     Interface *getNodeInterfaceByName(const std::string &if_name);
 
     /**
+     * @brief Get the interface from the interface list whose subnet matches with given IP address.
+     *
+     * @param ip_addr query parameter IP address
+     * @return returns an intreface whose subnet matches with the given IP address. Returns nullptr when none of the interface matches.
+     */
+    Interface *getMatchingSubnetInterface(const std::string &ip_addr);
+
+    /**
+     * @brief Set the Node Loopback Address object.
+     *
+     * @param ip_addr IP address to be set
+     * @return this procedure always succeeds.
+     */
+    bool setLoopbackAddress(const std::string &ip_addr);
+
+    /**
+     * @brief Set the IP address to the interface which is specified by the input parameter.
+     *
+     * @param if_name name of the interface
+     * @param ip_addr IP address to be set
+     * @param mask bit length of the subnet mask
+     * @return true if setting the IP address succeeds
+     * @return false if the interface `if_name` was not found
+     */
+    bool setInterfaceIPAddress(const std::string &if_name, const std::string &ip_addr, char mask);
+
+    /**
+     * @brief Unset the IP address from the interface which is specified by the input parameter.
+     *
+     * @param if_name name of the interface
+     * @return true if unsetting the IP address succeeds
+     * @return false if the interface `if_name` was not found
+     */
+    bool unsetInterfaceIPAddress(const std::string &if_name);
+
+    /**
      * @brief outputs a detail of this node on the standard output
      *
      */
@@ -190,8 +277,8 @@ private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
     static constexpr uint32_t MAX_NODE_NAME_LENGTH = 16;
 
-public:
     std::string node_name;
+    NodeNetworkProperty node_network_property;
     // interface list
     std::array<Interface *, MAX_INTF_PER_NODE> intfs;
 };
