@@ -17,6 +17,8 @@
 #include "color.hpp"
 #include "graph.hpp"
 
+#include "Layer2/layer2.hpp"
+
 extern Graph *topo;
 
 /* Generic Topology Commands */
@@ -55,7 +57,36 @@ int arp_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
 
     switch (cmd_code) {
     case CMDCODE_RUN_RESOLVE_ARP:
-        std::cout << node_name << " : " << getColoredString(ip_address, "Light Red") << std::endl;
+    {
+        Node *node = topo->getNodeByNodeName(node_name);
+        sendARPBroadcastRequest(node, nullptr, ip_address);
+        break;
+    }
+    }
+    return 0;
+}
+
+int show_arp_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    int cmd_code = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+    std::string node_name;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv)
+    {
+        if (std::string(tlv->leaf_id) == "node-name") {
+            node_name = tlv->value;
+        }
+    } TLV_LOOP_END;
+
+    switch (cmd_code) {
+    case CMDCODE_SHOW_ARP:
+    {
+        Node *node = topo->getNodeByNodeName(node_name);
+        node->getARPTable()->dump();
+        break;
+    }
     }
     return 0;
 }
@@ -110,6 +141,53 @@ void nw_init_cli()
         );
         libcli_register_param(show, &topology);
         set_param_cmd_code(&topology, CMDCODE_SHOW_NW_TOPOLOGY);
+
+
+        /* show node */
+        static param_t node;
+        init_param(
+            &node,
+            CMD,
+            "node",
+            0,
+            0,
+            INVALID,
+            0,
+            "Help : show node"
+        );
+
+        libcli_register_param(show, &node);
+        {
+            /* show node <node-name> */
+            static param_t node_name;
+            init_param(
+                &node_name,
+                LEAF,
+                0,
+                0,
+                validate_node_name,
+                STRING,
+                "node-name",
+                "Help : Node name"
+            );
+            libcli_register_param(&node, &node_name);
+
+            {
+                static param_t arp;
+                init_param(
+                    &arp,
+                    CMD,
+                    "arp",
+                    show_arp_handler,
+                    0,
+                    INVALID,
+                    0,
+                    "Help : arp"
+                );
+                libcli_register_param(&arp, &node_name);
+                set_param_cmd_code(&arp, CMDCODE_SHOW_ARP);
+            }
+        }
     }
 
     {

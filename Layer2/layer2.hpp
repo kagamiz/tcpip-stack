@@ -10,9 +10,12 @@
 
 #include <cstdint>
 #include <cstring>
+#include <list>
+#include <string>
 
 #include "../graph.hpp"
 #include "../net.hpp"
+#include "../printer.hpp"
 
 #pragma pack(push,1)
 
@@ -81,3 +84,37 @@ static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader
 }
 
 void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size);
+
+/* ARP Table APIs */
+struct ARPEntry {
+
+    ARPEntry();
+
+    IPAddress ip_addr;
+    MACAddress mac_addr;
+    std::string oif_name;
+};
+
+class ARPTable : public IPrinter {
+public:
+    ARPTable() {}
+
+    static ARPTable *getNewTable()
+    {
+        return new ARPTable();
+    }
+
+    bool addEntry(ARPEntry *arp_entry);
+    ARPEntry *arpTableLookup(const std::string &ip_addr);
+    void updateFromARPReply(ARPHeader *arp_header, Interface *iif);
+    void deleteEntry(const std::string &ip_addr);
+
+    virtual void dump() const override;
+
+private:
+    std::list<ARPEntry> arp_table;
+};
+
+ARPTable *getNewARPTable();
+void deleteARPTable(ARPTable *arp_table);
+void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr);

@@ -20,6 +20,21 @@
 
 #include "comm.hpp"
 
+#if 0
+ // forward declaration
+struct ARPEntry;
+class ARPTable;
+
+extern ARPTable::ARPTable();
+
+bool addEntry(ARPEntry *arp_entry);
+ARPEntry *arpTableLookup(const std::string &ip_addr);
+void updateFromARPReply(ARPHeader *arp_header, Interface *iif);
+void deleteEntry(const std::string &ip_addr);
+
+virtual void dump() const override;
+#endif
+
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
     att_node(nullptr),

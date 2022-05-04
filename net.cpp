@@ -13,6 +13,9 @@
 #include "color.hpp"
 #include "net.hpp"
 
+extern ARPTable *getNewARPTable();
+extern void deleteARPTable(ARPTable *arp_table);
+
 MACAddress::MACAddress() :
     mac{ 0 }
 {
@@ -79,10 +82,18 @@ IPAddress IPAddress::applyMask(char mask_size) const
 }
 
 NodeNetworkProperty::NodeNetworkProperty() :
+    arp_table(getNewARPTable()),
     is_loopback_addr_configured(false),
     loopback_addr("0.0.0.0")
 {
+}
 
+NodeNetworkProperty::~NodeNetworkProperty()
+{
+    if (arp_table) {
+        deleteARPTable(arp_table);
+    }
+    arp_table = nullptr;
 }
 
 void NodeNetworkProperty::dump() const
