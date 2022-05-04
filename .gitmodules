@@ -1,0 +1,3 @@
+[submodule "CommandParser"]
+	path = CommandParser
+	url = http://github.com/sachinites/CommandParser
