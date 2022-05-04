@@ -12,3 +12,4 @@
 #pragma once
 
 #define CMDCODE_SHOW_NW_TOPOLOGY        1
+#define CMDCODE_RUN_RESOLVE_ARP         2
