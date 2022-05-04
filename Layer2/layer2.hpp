@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "../graph.hpp"
 #include "../net.hpp"
 
 #pragma pack(push,1)
@@ -46,4 +47,22 @@ static inline EthernetHeader *ALLOC_ETH_HEADER_WITH_PAYLOAD(char *packet, uint32
     memset(iterator, 0, sizeof(uint32_t));
 
     return (EthernetHeader *)head_position;
+}
+
+static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader *ethernet_hdr)
+{
+    if (!intf->isL3Mode()) {
+        return false;
+    }
+
+    /* Return true if receiving machine must accept the frame */
+    if (intf->getMACAddress() == ethernet_hdr->dst_mac) {
+        return true;
+    }
+
+    if (ethernet_hdr->dst_mac == MACAddress::BROADCAST_MAC_ADDRESS) {
+        return true;
+    }
+
+    return false;
 }
