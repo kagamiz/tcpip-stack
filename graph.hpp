@@ -267,6 +267,18 @@ public:
      */
     bool unsetInterfaceIPAddress(const std::string &if_name);
 
+    uint32_t getUDPPortNumber() const
+    {
+        return udp_port_number;
+    }
+
+    int getUDPSocketFileDescriptor() const
+    {
+        return udp_sock_fd;
+    }
+
+    void receivePacket(char *packet_with_aux_data, uint32_t packet_size);
+
     /**
      * @brief outputs a detail of this node on the standard output
      *
@@ -275,7 +287,7 @@ public:
 
 private:
     void initUDPSocket();
-    uint32_t getUDPPortNumber();
+    uint32_t generateUDPPortNumber();
 
 private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
@@ -407,6 +419,8 @@ public:
      */
     Node *getNodeByNodeName(const std::string &node_name);
 
+    void startPacketReceiverThread();
+
     /**
      * @brief outputs a detail of this graph on the standard output
      *
@@ -417,4 +431,7 @@ private:
     std::string topology_name;
     std::list<Node *> nodes;
     static constexpr uint32_t MAX_TOPOLOGY_NAME_LENGTH = 32;
+    static constexpr uint32_t MAX_PACKET_BUFFER_SIZE = 2048;
+
+    char recv_buffer[MAX_PACKET_BUFFER_SIZE];
 };

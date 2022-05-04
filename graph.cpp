@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <thread>
 
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
@@ -96,7 +97,9 @@ void Interface::dump() const
 }
 
 Node::Node(const std::string &name) :
-    node_name(name.substr(0, MAX_NODE_NAME_LENGTH))
+    node_name(name.substr(0, MAX_NODE_NAME_LENGTH)),
+    udp_port_number(0),
+    udp_sock_fd(-1)
 {
     std::fill(std::begin(intfs), std::end(intfs), nullptr);
     initUDPSocket();
@@ -223,6 +226,11 @@ bool Node::unsetInterfaceIPAddress(const std::string &if_name)
     return true;
 }
 
+void Node::receivePacket(char *packet_with_aux_data, uint32_t packet_size)
+{
+    // TBD
+}
+
 void Node::dump() const
 {
     std::cout << "Node Name = " << node_name << ":" << std::endl;
@@ -235,14 +243,14 @@ void Node::dump() const
     }
 }
 
-uint32_t Node::getUDPPortNumber()
+uint32_t Node::generateUDPPortNumber()
 {
     return memoized_udp_port_number++;
 }
 
 void Node::initUDPSocket()
 {
-    udp_port_number = getUDPPortNumber();
+    udp_port_number = generateUDPPortNumber();
     udp_sock_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (udp_sock_fd < 0) {
@@ -344,6 +352,54 @@ Node *Graph::getNodeByNodeName(const std::string &node_name)
         return nullptr;
     }
     return *result;
+}
+
+void Graph::startPacketReceiverThread()
+{
+    std::thread t
+    ([this] {
+        fd_set active_sock_fd_set, backup_sock_fd_set;
+
+        int sock_max_fd = 0;
+        int bytes_recvd = 0;
+
+        int addr_len = sizeof(sockaddr);
+
+        FD_ZERO(&active_sock_fd_set);
+        FD_ZERO(&backup_sock_fd_set);
+
+        sockaddr_in sender_addr;
+
+        for (const auto &node : nodes) {
+            int sock_fd = node->getUDPSocketFileDescriptor();
+            if (sock_fd < 0) {
+                continue;
+            }
+            FD_SET(sock_fd, &backup_sock_fd_set);
+            sock_max_fd = std::max(sock_max_fd, sock_fd);
+        }
+
+        while (true) {
+            memcpy(&active_sock_fd_set, &backup_sock_fd_set, sizeof(fd_set));
+            select(sock_max_fd + 1, &active_sock_fd_set, nullptr, nullptr, nullptr);
+
+            for (auto &node : nodes) {
+                int sock_fd = node->getUDPSocketFileDescriptor();
+                if (sock_fd < 0) {
+                    continue;
+                }
+                if (!FD_ISSET(sock_fd, &active_sock_fd_set)) {
+                    continue;
+                }
+
+                memset(recv_buffer, 0, MAX_PACKET_BUFFER_SIZE);
+                bytes_recvd = recvfrom(sock_fd, reinterpret_cast<char *>(recv_buffer), MAX_PACKET_BUFFER_SIZE, 0, reinterpret_cast<sockaddr *>(&sender_addr), reinterpret_cast<socklen_t *>(&addr_len));
+                node->receivePacket(recv_buffer, bytes_recvd);
+            }
+        }
+     });
+
+    t.detach();
 }
 
 void Graph::dump() const
