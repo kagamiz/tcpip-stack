@@ -8,6 +8,10 @@
 
 #include "graph.hpp"
 
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <algorithm>
 #include <iostream>
 #include <random>
@@ -95,6 +99,7 @@ Node::Node(const std::string &name) :
     node_name(name.substr(0, MAX_NODE_NAME_LENGTH))
 {
     std::fill(std::begin(intfs), std::end(intfs), nullptr);
+    initUDPSocket();
 }
 
 Node::~Node()
@@ -227,6 +232,32 @@ void Node::dump() const
             continue;
         }
         intf->dump();
+    }
+}
+
+uint32_t Node::getUDPPortNumber()
+{
+    return memoized_udp_port_number++;
+}
+
+void Node::initUDPSocket()
+{
+    udp_port_number = getUDPPortNumber();
+    udp_sock_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (udp_sock_fd < 0) {
+        std::cout << "Error : socket() failed for Node " << node_name << std::endl;
+        return;
+    }
+
+    sockaddr_in node_addr;
+    node_addr.sin_family = AF_INET;
+    node_addr.sin_port = udp_port_number;
+    node_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(udp_sock_fd, reinterpret_cast<sockaddr *>(&node_addr), sizeof(sockaddr)) < 0) {
+        std::cout << "Error : socket bind failed for Node " << node_name << std::endl;
+        return;
     }
 }
 

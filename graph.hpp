@@ -274,13 +274,20 @@ public:
     virtual void dump() const override;
 
 private:
+    void initUDPSocket();
+    uint32_t getUDPPortNumber();
+
+private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
     static constexpr uint32_t MAX_NODE_NAME_LENGTH = 16;
+    inline static uint32_t memoized_udp_port_number = 40000;
 
     std::string node_name;
     NodeNetworkProperty node_network_property;
     // interface list
     std::array<Interface *, MAX_INTF_PER_NODE> intfs;
+    uint32_t udp_port_number;
+    int udp_sock_fd;
 };
 
 /**
