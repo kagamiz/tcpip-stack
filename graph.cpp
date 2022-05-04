@@ -110,6 +110,15 @@ int Interface::sendPacketOut(char *packet, uint32_t packet_size)
     return rc;
 }
 
+int Interface::receivePacket(char *packet, uint32_t packet_size)
+{
+    /*
+        Entry point into data link layer from physical layer
+        Ingress journey of the packet starts from here in the TCP/IP stack
+    */
+    return 0;
+}
+
 void Interface::dump() const
 {
     std::cout
@@ -276,16 +285,7 @@ void Node::receivePacket(char *packet_with_aux_data, uint32_t packet_size)
         return;
     }
 
-    receivePacketInternal(recv_intf, packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
-}
-
-int Node::receivePacketInternal(Interface *intf, char *packet, uint32_t packet_size)
-{
-    /*
-        Entry point into data link layer from physical layer
-        Ingress journey of the packet starts from here in the TCP/IP stack
-    */
-    return 0;
+    recv_intf->receivePacket(packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
 }
 
 void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size)

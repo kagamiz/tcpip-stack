@@ -1,10 +1,9 @@
 /**
  * @file nwcli.cpp
  * @author Jayson Sho Toma
- * @brief
+ * @brief CLI for accessing network library
  * @version 0.1
  * @date 2022-05-04
- *
  */
 
 #include <iostream>

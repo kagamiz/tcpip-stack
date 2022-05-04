@@ -4,7 +4,6 @@
  * @brief constructs topology by using graph APIs.
  * @version 0.1
  * @date 2022-05-03
- *
  */
 
 #include "graph.hpp"

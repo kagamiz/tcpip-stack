@@ -1,7 +1,7 @@
 /**
  * @file comm.cpp
  * @author Jayson Sho Toma
- * @brief
+ * @brief Supports UDP socket transmission behind the logical network configuration.
  * @version 0.1
  * @date 2022-05-04
  */
