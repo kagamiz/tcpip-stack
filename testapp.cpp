@@ -7,13 +7,17 @@
  */
 
 #include "graph.hpp"
+#include "nwcli.hpp"
+#include "topologies.hpp"
+#include "CommandParser/libcli.h"
 
-extern Graph *build_first_topo();
+Graph *topo;
 
 int main()
 {
-    Graph *g = build_first_topo();
-    g->dump();
-    delete g;
+    nw_init_cli();
+    topo = build_first_topo();
+    start_shell();
+    delete topo;
     return 0;
 }
