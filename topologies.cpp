@@ -32,5 +32,7 @@ Graph *build_first_topo()
     R2_re->setInterfaceIPAddress("eth0/3", "30.1.1.2", 24);
     R2_re->setInterfaceIPAddress("eth0/5", "40.1.1.2", 24);
 
+    topo->startPacketReceiverThread();
+
     return topo;
 }
