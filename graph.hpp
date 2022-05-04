@@ -36,6 +36,11 @@ public:
      */
     explicit Interface(const std::string &name);
 
+    static uint32_t getMaxInterfaceNameLength()
+    {
+        return MAX_INTF_NAME_LENGTH;
+    }
+
     /**
      * @brief Get the name of the interface
      *
@@ -290,6 +295,8 @@ public:
 private:
     void initUDPSocket();
     uint32_t generateUDPPortNumber();
+
+    int receivePacketInternal(char *packet, uint32_t packet_size);
 
 private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;

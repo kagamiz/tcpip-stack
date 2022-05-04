@@ -261,7 +261,31 @@ bool Node::unsetInterfaceIPAddress(const std::string &if_name)
 
 void Node::receivePacket(char *packet_with_aux_data, uint32_t packet_size)
 {
-    // TBD
+    std::string recv_interface_name = "";
+    const uint32_t max_interface_name_length = Interface::getMaxInterfaceNameLength();
+    for (uint32_t i = 0; i < max_interface_name_length; i++) {
+        if (!packet_with_aux_data[i]) {
+            break;
+        }
+        recv_interface_name += packet_with_aux_data[i];
+    }
+    Interface *recv_intf = getNodeInterfaceByName(recv_interface_name);
+
+    if (!recv_intf) {
+        std::cout << "Error : Packet recvd on unknown interface" << recv_interface_name << " on node " << node_name << std::endl;
+        return;
+    }
+
+    receivePacketInternal(packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
+}
+
+int Node::receivePacketInternal(char *packet, uint32_t packet_size)
+{
+    /*
+        Entry point into data link layer from physical layer
+        Ingress journey of the packet starts from here in the TCP/IP stack
+    */
+    return 0;
 }
 
 void Node::dump() const
