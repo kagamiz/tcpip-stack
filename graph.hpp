@@ -142,6 +142,8 @@ public:
      */
     bool isL3Mode() const;
 
+    int sendPacketOut(char *packet, uint32_t packet_size);
+
     /**
      * @brief outputs a detail of this interface on the standard output.
      *
@@ -431,7 +433,4 @@ private:
     std::string topology_name;
     std::list<Node *> nodes;
     static constexpr uint32_t MAX_TOPOLOGY_NAME_LENGTH = 32;
-    static constexpr uint32_t MAX_PACKET_BUFFER_SIZE = 2048;
-
-    char recv_buffer[MAX_PACKET_BUFFER_SIZE];
 };

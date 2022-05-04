@@ -11,11 +11,14 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <iostream>
 #include <random>
 #include <thread>
+
+#include "comm.hpp"
 
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
@@ -75,6 +78,36 @@ void Interface::unsetIPAddress()
 bool Interface::isL3Mode() const
 {
     return intf_network_property.isL3Mode();
+}
+
+int Interface::sendPacketOut(char *packet, uint32_t packet_size)
+{
+    const Node *neighbour_node = getNeighbourNode();
+
+    if (!neighbour_node) {
+        return -1;
+    }
+
+    uint32_t dst_udp_port_no = neighbour_node->getUDPPortNumber();
+
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock < 0) {
+        std::cout << "Error : Sending socket creation failed, errno = " << errno << std::endl;
+        return -1;
+    }
+
+    Interface *other_interface = link->getFromInterface() == this ? link->getToInterface() : link->getFromInterface();
+    std::fill(std::begin(send_buffer), std::end(send_buffer), 0);
+
+    char *pkt_with_aux_data = send_buffer;
+    strncpy(pkt_with_aux_data, other_interface->getName().c_str(), MAX_INTF_NAME_LENGTH);
+    memcpy(pkt_with_aux_data + MAX_INTF_NAME_LENGTH, packet, packet_size);
+
+    int rc = ::sendPacketOut(sock, pkt_with_aux_data, packet_size + MAX_INTF_NAME_LENGTH, dst_udp_port_no);
+
+    close(sock);
+
+    return rc;
 }
 
 void Interface::dump() const

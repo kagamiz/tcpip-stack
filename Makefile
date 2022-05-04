@@ -6,7 +6,8 @@ OBJS=graph.o \
 	 topologies.o \
 	 net.o \
 	 color.o \
-	 nwcli.o
+	 nwcli.o \
+	 comm.o
 
 test.out:testapp.o ${OBJS} CommandParser/libcli.a
 	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test.out ${LIBS}
@@ -28,6 +29,9 @@ color.o:color.cpp
 
 nwcli.o:nwcli.cpp
 	${CXX} ${CFLAGS} -c -I . -o nwcli.o nwcli.cpp
+
+comm.o:comm.cpp
+	${CXX} ${CFLAGS} -c -I . -o comm.o comm.cpp
 
 CommandParser/libcli.a:
 	(cd CommandParser; make)
