@@ -4,7 +4,6 @@
  * @brief constructs topology by using graph APIs.
  * @version 0.1
  * @date 2022-05-03
- *
  */
 
 #include "graph.hpp"
@@ -31,6 +30,8 @@ Graph *build_first_topo()
     R2_re->setLoopbackAddress("122.1.1.2");
     R2_re->setInterfaceIPAddress("eth0/3", "30.1.1.2", 24);
     R2_re->setInterfaceIPAddress("eth0/5", "40.1.1.2", 24);
+
+    topo->startPacketReceiverThread();
 
     return topo;
 }

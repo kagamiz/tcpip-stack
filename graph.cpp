@@ -8,9 +8,17 @@
 
 #include "graph.hpp"
 
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <thread>
+
+#include "comm.hpp"
 
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
@@ -72,6 +80,45 @@ bool Interface::isL3Mode() const
     return intf_network_property.isL3Mode();
 }
 
+int Interface::sendPacketOut(char *packet, uint32_t packet_size)
+{
+    const Node *neighbour_node = getNeighbourNode();
+
+    if (!neighbour_node) {
+        return -1;
+    }
+
+    uint32_t dst_udp_port_no = neighbour_node->getUDPPortNumber();
+
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock < 0) {
+        std::cout << "Error : Sending socket creation failed, errno = " << errno << std::endl;
+        return -1;
+    }
+
+    Interface *other_interface = link->getFromInterface() == this ? link->getToInterface() : link->getFromInterface();
+    std::fill(std::begin(send_buffer), std::end(send_buffer), 0);
+
+    char *pkt_with_aux_data = send_buffer;
+    strncpy(pkt_with_aux_data, other_interface->getName().c_str(), MAX_INTF_NAME_LENGTH);
+    memcpy(pkt_with_aux_data + MAX_INTF_NAME_LENGTH, packet, packet_size);
+
+    int rc = ::sendPacketOut(sock, pkt_with_aux_data, packet_size + MAX_INTF_NAME_LENGTH, dst_udp_port_no);
+
+    close(sock);
+
+    return rc;
+}
+
+int Interface::receivePacket(char *packet, uint32_t packet_size)
+{
+    /*
+        Entry point into data link layer from physical layer
+        Ingress journey of the packet starts from here in the TCP/IP stack
+    */
+    return 0;
+}
+
 void Interface::dump() const
 {
     std::cout
@@ -92,9 +139,12 @@ void Interface::dump() const
 }
 
 Node::Node(const std::string &name) :
-    node_name(name.substr(0, MAX_NODE_NAME_LENGTH))
+    node_name(name.substr(0, MAX_NODE_NAME_LENGTH)),
+    udp_port_number(0),
+    udp_sock_fd(-1)
 {
     std::fill(std::begin(intfs), std::end(intfs), nullptr);
+    initUDPSocket();
 }
 
 Node::~Node()
@@ -218,6 +268,39 @@ bool Node::unsetInterfaceIPAddress(const std::string &if_name)
     return true;
 }
 
+void Node::receivePacket(char *packet_with_aux_data, uint32_t packet_size)
+{
+    std::string recv_interface_name = "";
+    const uint32_t max_interface_name_length = Interface::getMaxInterfaceNameLength();
+    for (uint32_t i = 0; i < max_interface_name_length; i++) {
+        if (!packet_with_aux_data[i]) {
+            break;
+        }
+        recv_interface_name += packet_with_aux_data[i];
+    }
+    Interface *recv_intf = getNodeInterfaceByName(recv_interface_name);
+
+    if (!recv_intf) {
+        std::cout << "Error : Packet recvd on unknown interface" << recv_interface_name << " on node " << node_name << std::endl;
+        return;
+    }
+
+    recv_intf->receivePacket(packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
+}
+
+void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size)
+{
+    for (auto &intf : intfs) {
+        if (!intf) {
+            continue;
+        }
+        if (intf == exempted_intf) {
+            continue;
+        }
+        intf->sendPacketOut(packet, packet_size);
+    }
+}
+
 void Node::dump() const
 {
     std::cout << "Node Name = " << node_name << ":" << std::endl;
@@ -227,6 +310,32 @@ void Node::dump() const
             continue;
         }
         intf->dump();
+    }
+}
+
+uint32_t Node::generateUDPPortNumber()
+{
+    return memoized_udp_port_number++;
+}
+
+void Node::initUDPSocket()
+{
+    udp_port_number = generateUDPPortNumber();
+    udp_sock_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (udp_sock_fd < 0) {
+        std::cout << "Error : socket() failed for Node " << node_name << std::endl;
+        return;
+    }
+
+    sockaddr_in node_addr;
+    node_addr.sin_family = AF_INET;
+    node_addr.sin_port = udp_port_number;
+    node_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(udp_sock_fd, reinterpret_cast<sockaddr *>(&node_addr), sizeof(sockaddr)) < 0) {
+        std::cout << "Error : socket bind failed for Node " << node_name << std::endl;
+        return;
     }
 }
 
@@ -313,6 +422,54 @@ Node *Graph::getNodeByNodeName(const std::string &node_name)
         return nullptr;
     }
     return *result;
+}
+
+void Graph::startPacketReceiverThread()
+{
+    std::thread t
+    ([this] {
+        fd_set active_sock_fd_set, backup_sock_fd_set;
+
+        int sock_max_fd = 0;
+        int bytes_recvd = 0;
+
+        int addr_len = sizeof(sockaddr);
+
+        FD_ZERO(&active_sock_fd_set);
+        FD_ZERO(&backup_sock_fd_set);
+
+        sockaddr_in sender_addr;
+
+        for (const auto &node : nodes) {
+            int sock_fd = node->getUDPSocketFileDescriptor();
+            if (sock_fd < 0) {
+                continue;
+            }
+            FD_SET(sock_fd, &backup_sock_fd_set);
+            sock_max_fd = std::max(sock_max_fd, sock_fd);
+        }
+
+        while (true) {
+            memcpy(&active_sock_fd_set, &backup_sock_fd_set, sizeof(fd_set));
+            select(sock_max_fd + 1, &active_sock_fd_set, nullptr, nullptr, nullptr);
+
+            for (auto &node : nodes) {
+                int sock_fd = node->getUDPSocketFileDescriptor();
+                if (sock_fd < 0) {
+                    continue;
+                }
+                if (!FD_ISSET(sock_fd, &active_sock_fd_set)) {
+                    continue;
+                }
+
+                memset(recv_buffer, 0, MAX_PACKET_BUFFER_SIZE);
+                bytes_recvd = recvfrom(sock_fd, reinterpret_cast<char *>(recv_buffer), MAX_PACKET_BUFFER_SIZE, 0, reinterpret_cast<sockaddr *>(&sender_addr), reinterpret_cast<socklen_t *>(&addr_len));
+                node->receivePacket(recv_buffer, bytes_recvd);
+            }
+        }
+     });
+
+    t.detach();
 }
 
 void Graph::dump() const

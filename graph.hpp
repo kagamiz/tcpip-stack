@@ -36,6 +36,11 @@ public:
      */
     explicit Interface(const std::string &name);
 
+    static uint32_t getMaxInterfaceNameLength()
+    {
+        return MAX_INTF_NAME_LENGTH;
+    }
+
     /**
      * @brief Get the name of the interface
      *
@@ -141,6 +146,24 @@ public:
      * @return false
      */
     bool isL3Mode() const;
+
+    /**
+     * @brief sends data from this interface to the opponent interface
+     *
+     * @param packet data to be sent
+     * @param packet_size size of the data
+     * @return int size of the sent data
+     */
+    int sendPacketOut(char *packet, uint32_t packet_size);
+
+    /**
+     * @brief receives data from the opponent interface
+     *
+     * @param packet data recvd
+     * @param packet_size size of the data
+     * @return int
+     */
+    int receivePacket(char *packet, uint32_t packet_size);
 
     /**
      * @brief outputs a detail of this interface on the standard output.
@@ -268,19 +291,73 @@ public:
     bool unsetInterfaceIPAddress(const std::string &if_name);
 
     /**
+     * @brief gets UDP port number assigned to the node.
+     *
+     * @return uint32_t
+     */
+    uint32_t getUDPPortNumber() const
+    {
+        return udp_port_number;
+    }
+
+    /**
+     * @brief gets UDP socket file descriptor assigned to the node.
+     *
+     * @return int
+     */
+    int getUDPSocketFileDescriptor() const
+    {
+        return udp_sock_fd;
+    }
+
+    /**
+     * @brief receive a packet with auxiliary data. Internally, it removes auxiliary data and passes the data to the destination interface.
+     *
+     * @param packet_with_aux_data
+     * @param packet_size
+     */
+    void receivePacket(char *packet_with_aux_data, uint32_t packet_size);
+
+    /**
+     * @brief send the packet `packet` out of all interfaces of a node, except the interface `exempted_intf`.
+     *
+     * @param exempted_intf interface to be excluded from sending a data.
+     * @param packet raw data.
+     * @param packet_size size of the data.
+     */
+    void sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size);
+
+    /**
      * @brief outputs a detail of this node on the standard output
      *
      */
     virtual void dump() const override;
 
 private:
+    /**
+     * @brief sets file descriptor and assigns UDP port number for the node.
+     *
+     */
+    void initUDPSocket();
+    /**
+     * @brief generate unique port number for the node.
+     *
+     * @return uint32_t
+     */
+    uint32_t generateUDPPortNumber();
+
+private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
     static constexpr uint32_t MAX_NODE_NAME_LENGTH = 16;
+    inline static uint32_t memoized_udp_port_number = 40000;
 
     std::string node_name;
     NodeNetworkProperty node_network_property;
     // interface list
     std::array<Interface *, MAX_INTF_PER_NODE> intfs;
+
+    uint32_t udp_port_number;
+    int udp_sock_fd;
 };
 
 /**
@@ -399,6 +476,12 @@ public:
      * @return returns pointer to the node named `node_name`. Returns nullptr if such node does not exist.
      */
     Node *getNodeByNodeName(const std::string &node_name);
+
+    /**
+     * @brief starts the packet receiver thread.
+     *
+     */
+    void startPacketReceiverThread();
 
     /**
      * @brief outputs a detail of this graph on the standard output
