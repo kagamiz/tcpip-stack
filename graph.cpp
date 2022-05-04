@@ -288,6 +288,19 @@ int Node::receivePacketInternal(Interface *intf, char *packet, uint32_t packet_s
     return 0;
 }
 
+void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size)
+{
+    for (auto &intf : intfs) {
+        if (!intf) {
+            continue;
+        }
+        if (intf == exempted_intf) {
+            continue;
+        }
+        intf->sendPacketOut(packet, packet_size);
+    }
+}
+
 void Node::dump() const
 {
     std::cout << "Node Name = " << node_name << ":" << std::endl;

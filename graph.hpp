@@ -287,6 +287,15 @@ public:
     void receivePacket(char *packet_with_aux_data, uint32_t packet_size);
 
     /**
+     * @brief send the packet `packet` out of all interfaces of a node, except the interface `exempted_intf`.
+     *
+     * @param exempted_intf interface to be excluded from sending a data.
+     * @param packet raw data.
+     * @param packet_size size of the data.
+     */
+    void sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size);
+
+    /**
      * @brief outputs a detail of this node on the standard output
      *
      */
