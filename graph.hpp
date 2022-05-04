@@ -106,6 +106,16 @@ public:
     void assignMACAddress();
 
     /**
+     * @brief returns MAC address assigned to the interface.
+     *
+     * @return const MACAddress&
+     */
+    const MACAddress &getMACAddress() const
+    {
+        return intf_network_property.getMACAddress();
+    }
+
+    /**
      * @brief get the interface's IP address
      *
      * @return const IPAddress&

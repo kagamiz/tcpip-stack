@@ -11,3 +11,4 @@
 #include "graph.hpp"
 
 Graph *build_first_topo();
+Graph *build_linear_topo();

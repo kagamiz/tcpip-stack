@@ -279,3 +279,5 @@ private:
     IPAddress ip_addr;
     char mask;
 };
+
+char *packetBufferShiftRight(char *packet, uint32_t packet_size, uint32_t total_buffer_size);

@@ -114,3 +114,10 @@ void InterfaceNetworkProperty::dump() const
         << static_cast<std::string>(mac_addr)
         << std::endl;
 }
+
+char *packetBufferShiftRight(char *packet, uint32_t packet_size, uint32_t total_buffer_size)
+{
+    uint32_t head_position = total_buffer_size - packet_size;
+    memmove(packet + head_position, packet, packet_size);
+    return packet + head_position;
+}
