@@ -66,3 +66,5 @@ static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader
 
     return false;
 }
+
+void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size);

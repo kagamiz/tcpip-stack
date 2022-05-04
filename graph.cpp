@@ -110,12 +110,18 @@ int Interface::sendPacketOut(char *packet, uint32_t packet_size)
     return rc;
 }
 
+extern void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size);
+
 int Interface::receivePacket(char *packet, uint32_t packet_size)
 {
     /*
         Entry point into data link layer from physical layer
         Ingress journey of the packet starts from here in the TCP/IP stack
     */
+    packet = packetBufferShiftRight(packet, packet_size, MAX_PACKET_BUFFER_SIZE - MAX_INTF_NAME_LENGTH);
+
+    layer2FrameRecv(const_cast<Node *>(getNode()), this, packet, packet_size);
+
     return 0;
 }
 

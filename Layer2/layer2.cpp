@@ -7,3 +7,8 @@
  */
 
 #include "layer2.hpp"
+
+void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size)
+{
+    /* Entry point into TCP/IP from bottom */
+}
