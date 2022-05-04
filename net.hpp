@@ -98,26 +98,25 @@ public:
      */
     operator std::string() const;
 
-    /**
-     * @brief returns array which represents MAC address.
-     *
-     * @return const char*
-     */
-    const char *get() const
+    uint64_t getBitRepresentation() const
     {
-        return mac;
+        uint64_t result = 0;
+        for (const auto &byte : mac) {
+            result = (result << 8) | byte;
+        }
+        return result;
     }
 
     /**
      * @brief compares whether two MAC addresses are same
      *
      * @param rhs MAC address to be compared
-     * @return true if array representation of the MAC address are equal
+     * @return true if bit representation of the MAC address are equal
      * @return false otherwise
      */
     bool operator==(const MACAddress &rhs) const
     {
-        return std::memcmp(mac, rhs.get(), MAC_ADDRESS_BYTE_LENGTH) == 0;
+        return getBitRepresentation() == rhs.getBitRepresentation();
     }
 
     /**
