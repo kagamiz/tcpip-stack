@@ -15,6 +15,19 @@
 #include "../net.hpp"
 
 #pragma pack(push,1)
+
+struct ARPHeader {
+    int16_t hw_type;                /* 1 for ethernet cable */
+    int16_t proto_type;             /* 0x800 for IPv4 */
+    int8_t  hw_addr_len;            /* 6 for MAC */
+    int8_t  proto_addr_len;         /* 4 for IPv4 */
+    int16_t op_code;                /* req or reply */
+    MACAddress src_mac;             /* MAC of OIF interface */
+    uint32_t src_ip;                /* IP of OIF */
+    MACAddress dst_mac;             /* ? */
+    uint32_t dst_ip;                /* IP for which ARP is being resolved */
+};
+
 struct EthernetHeader {
     MACAddress dst_mac;
     MACAddress src_mac;
