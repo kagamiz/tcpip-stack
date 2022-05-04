@@ -75,7 +75,7 @@ IPAddress::operator std::string() const
 
 IPAddress IPAddress::applyMask(char mask_size) const
 {
-    return IPAddress(ip_addr & ~((1ll << mask_size) - 1));
+    return IPAddress(ip_addr & ~((1ll << (32 - mask_size)) - 1));
 }
 
 NodeNetworkProperty::NodeNetworkProperty() :
