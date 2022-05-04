@@ -9,16 +9,19 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <cstring>
+#include <string>
 
 #include "printer.hpp"
 
- /**
-  * @class IPAddress
-  * @brief represents an IP address.
-  *
-  */
+ // forward declaration
+class ARPTable;
+
+/**
+ * @class IPAddress
+ * @brief represents an IP address.
+ *
+ */
 class IPAddress {
 public:
     /**
@@ -65,6 +68,11 @@ public:
     bool operator==(const IPAddress &rhs) const
     {
         return static_cast<uint32_t>(*this) == static_cast<uint32_t>(rhs);
+    }
+
+    bool operator!=(const IPAddress &rhs) const
+    {
+        return !(*this == rhs);
     }
 
 private:
@@ -143,6 +151,8 @@ public:
      */
     NodeNetworkProperty();
 
+    ~NodeNetworkProperty();
+
     /**
      * @brief Get the Loopback Address object
      *
@@ -164,6 +174,11 @@ public:
         is_loopback_addr_configured = true;
     }
 
+    const ARPTable *getARPTable() const
+    {
+        return arp_table;
+    }
+
     /**
      * @brief outputs a detail of this node property on the standard output
      *
@@ -171,6 +186,10 @@ public:
     virtual void dump() const override;
 
 private:
+
+    /* L2 properties */
+    ARPTable *arp_table;
+
     /* L3 properties */
     bool is_loopback_addr_configured;
     IPAddress loopback_addr;

@@ -337,6 +337,12 @@ public:
      */
     void sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size);
 
+
+    const ARPTable *getARPTable() const
+    {
+        return node_network_property.getARPTable();
+    }
+
     /**
      * @brief outputs a detail of this node on the standard output
      *
