@@ -72,7 +72,7 @@ int validate_node_name(char *value)
 int validate_ipv4_address(char *value)
 {
     std::cmatch m;
-    if (!std::regex_search(value, m, std::regex("^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"))) {
+    if (!std::regex_search(value, m, std::regex("^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"))) {
         std::cout << getColoredString("Error : wrong IPv4 format.", "Red") << std::endl;
         return VALIDATION_FAILED;
     }
@@ -89,6 +89,11 @@ void nw_init_cli()
     param_t *run = libcli_get_run_hook();
     param_t *debug_show = libcli_get_debug_show_hook();
     param_t *root = libcli_get_root();
+
+    // currently unused
+    (void)root;
+    (void)debug_show;
+    (void)debug;
 
     {
         /* show topology */
