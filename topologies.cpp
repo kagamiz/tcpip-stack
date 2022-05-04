@@ -35,3 +35,27 @@ Graph *build_first_topo()
 
     return topo;
 }
+
+Graph *build_linear_topo()
+{
+    Graph *topo = new Graph("Linear Topo");
+    Node *H1 = topo->addNode("H1");
+    Node *H2 = topo->addNode("H2");
+    Node *H3 = topo->addNode("H3");
+
+    topo->insertLinkBetweenTwoNodes(H1, H2, "eth0/1", "eth0/2", 1);
+    topo->insertLinkBetweenTwoNodes(H2, H3, "eth0/3", "eth0/4", 1);
+
+    H1->setLoopbackAddress("122.1.1.1");
+    H2->setLoopbackAddress("122.1.1.2");
+    H3->setLoopbackAddress("122.1.1.3");
+
+    H1->setInterfaceIPAddress("eth0/1", "10.1.1.1", 24);
+    H2->setInterfaceIPAddress("eth0/2", "10.1.1.2", 24);
+    H2->setInterfaceIPAddress("eth0/3", "20.1.1.2", 24);
+    H3->setInterfaceIPAddress("eth0/4", "20.1.1.1", 24);
+
+    topo->startPacketReceiverThread();
+
+    return topo;
+}
