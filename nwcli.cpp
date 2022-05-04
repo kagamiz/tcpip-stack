@@ -184,7 +184,7 @@ void nw_init_cli()
                     0,
                     "Help : arp"
                 );
-                libcli_register_param(&arp, &node_name);
+                libcli_register_param(&node_name, &arp);
                 set_param_cmd_code(&arp, CMDCODE_SHOW_ARP);
             }
         }

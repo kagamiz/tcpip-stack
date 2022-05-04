@@ -70,6 +70,11 @@ public:
         return static_cast<uint32_t>(*this) == static_cast<uint32_t>(rhs);
     }
 
+    bool operator!=(const IPAddress &rhs) const
+    {
+        return !(*this == rhs);
+    }
+
 private:
     uint32_t ip_addr;
 };

@@ -6,6 +6,7 @@
  * @date 2022-05-04
  */
 
+#include "../comm.hpp"
 #include "../color.hpp"
 #include "../tcpconst.hpp"
 #include "layer2.hpp"
@@ -14,9 +15,43 @@
 #include <cassert>
 #include <iostream>
 
+ /* function prototype declaration */
+static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *ethernet_header);
+static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeader *ethernet_header);
+
 void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size)
 {
     /* Entry point into TCP/IP from bottom */
+    EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
+
+    if (!l2FrameRecvQualifyOnInterface(interface, ethernet_header)) {
+        std::cout << "L2 Frame Rejected" << std::endl;
+        return;
+    }
+
+    std::cout << "L2 Frame Accepted" << std::endl;
+
+    switch (ethernet_header->type) {
+    case ARP_MSG:
+    {
+        ARPHeader *arp_hdr = reinterpret_cast<ARPHeader *>(ethernet_header->payload);
+        switch (arp_hdr->op_code) {
+        case ARP_BROAD_REQ:
+            processARPBroadcastRequest(node, interface, ethernet_header);
+            break;
+        case ARP_REPLY:
+            processARPReplyMessage(node, interface, ethernet_header);
+            break;
+        default:
+            break;
+        }
+    }
+    break;
+
+    default:
+        // promotePacketToLayer3(node, interface, packet, packet_size);
+        break;
+    }
 }
 
 ARPEntry::ARPEntry() :
@@ -107,10 +142,49 @@ void deleteARPTable(ARPTable *arp_table)
     delete arp_table;
 }
 
+static void sendARPReplyMessage(EthernetHeader *ethernet_header_in, Interface *oif)
+{
+    ARPHeader *arp_header_in = (ARPHeader *)ethernet_header_in->payload;
+    EthernetHeader *ethenet_header_reply = (EthernetHeader *)(new char[MAX_PACKET_BUFFER_SIZE]);
+
+    ethenet_header_reply->dst_mac = ethernet_header_in->src_mac;
+    ethenet_header_reply->src_mac = oif->getMACAddress();
+
+    ethenet_header_reply->type = ARP_MSG;
+    ARPHeader *arp_header_reply = (ARPHeader *)ethenet_header_reply->payload;
+
+    arp_header_reply->hw_type = 1;
+    arp_header_reply->proto_type = 0x0800;
+    arp_header_reply->hw_addr_len = sizeof(MACAddress);
+    arp_header_reply->proto_addr_len = 4;
+
+    arp_header_reply->op_code = ARP_REPLY;
+
+    arp_header_reply->src_mac = oif->getMACAddress();
+    arp_header_reply->src_ip = oif->getIPAddress();
+
+    arp_header_reply->dst_mac = arp_header_in->src_mac;
+    arp_header_reply->dst_ip = arp_header_in->src_ip;
+
+    ETH_FCS(ethenet_header_reply, sizeof(ARPHeader)) = 0;
+
+    uint32_t total_packet_size = ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader);
+    char *shifted_packet_buffer = packetBufferShiftRight(reinterpret_cast<char *>(ethenet_header_reply), total_packet_size, MAX_PACKET_BUFFER_SIZE);
+    oif->sendPacketOut(shifted_packet_buffer, total_packet_size);
+    delete[] ethenet_header_reply;
+}
+
+static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *ethernet_header)
+{
+    std::cout << __FUNCTION__ << " : ARP reply msg recvd on interface " << iif->getName() << " of node " << iif->getNode()->getName() << std::endl;
+
+    ARPTable *arp_table = const_cast<ARPTable *>(node->getARPTable());
+    arp_table->updateFromARPReply((ARPHeader *)ethernet_header->payload, iif);
+}
+
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr)
 {
-    uint32_t payload_size = sizeof(ARPHeader);
-    EthernetHeader *ethenet_header = (EthernetHeader *)calloc(sizeof(char), ETH_HDR_SIZE_EXCL_PAYLOAD + payload_size);
+    EthernetHeader *ethenet_header = (EthernetHeader *)(new char[ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader)]);
 
     if (!oif) {
         oif = node->getMatchingSubnetInterface(IPAddress(ip_addr));
@@ -146,5 +220,26 @@ void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_a
     ETH_FCS(ethenet_header, sizeof(ARPHeader)) = 0; // unused
 
     /* STEP 3 : Now dispatch the ARP Broadcast Request Packet out of interface */
-    oif->sendPacketOut(reinterpret_cast<char *>(ethenet_header), sizeof(EthernetHeader));
+    oif->sendPacketOut(reinterpret_cast<char *>(ethenet_header), ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader));
+
+    delete[] ethenet_header;
+}
+
+static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeader *ethernet_header)
+{
+    std::cout << __FUNCTION__ << " : ARP Broadcast msg recvd on interface " << iif->getName() << " of node " << node->getName() << std::endl;
+    ARPHeader *arp_header = reinterpret_cast<ARPHeader *>(ethernet_header->payload);
+    IPAddress arp_dst_ip = IPAddress(arp_header->dst_ip);
+
+    if (iif->getIPAddress() != arp_dst_ip) {
+        std::cout <<
+            node->getName() <<
+            " : ARP Broadcast request message dropped, dst IP address " <<
+            static_cast<std::string>(arp_dst_ip) <<
+            " did not match with interface IP : " <<
+            static_cast<std::string>(iif->getIPAddress()) <<
+            std::endl;
+        return;
+    }
+    sendARPReplyMessage(ethernet_header, iif);
 }
