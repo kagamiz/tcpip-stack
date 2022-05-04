@@ -276,10 +276,10 @@ void Node::receivePacket(char *packet_with_aux_data, uint32_t packet_size)
         return;
     }
 
-    receivePacketInternal(packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
+    receivePacketInternal(recv_intf, packet_with_aux_data + max_interface_name_length, packet_size - max_interface_name_length);
 }
 
-int Node::receivePacketInternal(char *packet, uint32_t packet_size)
+int Node::receivePacketInternal(Interface *intf, char *packet, uint32_t packet_size)
 {
     /*
         Entry point into data link layer from physical layer

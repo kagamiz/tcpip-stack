@@ -296,7 +296,7 @@ private:
     void initUDPSocket();
     uint32_t generateUDPPortNumber();
 
-    int receivePacketInternal(char *packet, uint32_t packet_size);
+    int receivePacketInternal(Interface *intf, char *packet, uint32_t packet_size);
 
 private:
     static constexpr uint32_t MAX_INTF_PER_NODE = 10;
