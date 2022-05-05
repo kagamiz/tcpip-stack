@@ -107,6 +107,7 @@ void NodeNetworkProperty::dump() const
 
 InterfaceNetworkProperty::InterfaceNetworkProperty() :
     mac_addr(),
+    l2mode(L2Mode::L2_MODE_UNKOWN),
     is_ip_addr_configured(false),
     ip_addr("0.0.0.0"),
     mask(0)
@@ -123,6 +124,9 @@ void InterfaceNetworkProperty::dump() const
         << "  "
         << "MAC : "
         << static_cast<std::string>(mac_addr)
+        << "  "
+        << "L2 Mode : "
+        << getL2ModeStr()
         << std::endl;
 }
 

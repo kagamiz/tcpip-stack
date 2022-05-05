@@ -118,3 +118,6 @@ private:
 ARPTable *getNewARPTable();
 void deleteARPTable(ARPTable *arp_table);
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr);
+
+/* L2 Switching functionallity */
+void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const InterfaceNetworkProperty::L2Mode &mode);

@@ -175,6 +175,11 @@ public:
      */
     int receivePacket(char *packet, uint32_t packet_size);
 
+    void setL2Mode(const InterfaceNetworkProperty::L2Mode &mode)
+    {
+        intf_network_property.setL2Mode(mode);
+    }
+
     /**
      * @brief outputs a detail of this interface on the standard output.
      *
