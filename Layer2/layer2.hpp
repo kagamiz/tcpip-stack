@@ -121,3 +121,64 @@ private:
 ARPTable *getNewARPTable();
 void deleteARPTable(ARPTable *arp_table);
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr);
+
+/* VLAN support */
+#pragma pack(push, 1)
+struct VLAN8021QHeader {
+    uint16_t tpid;  /* = 0x8100 */
+    uint16_t tci_pcp : 3; /* initial 4 bits are not used in this code */
+    uint16_t tci_dei : 1;
+    uint16_t tci_vid : 12; /* tagged VLAN id */
+    uint32_t getVLANID() const
+    {
+        return tci_vid;
+    }
+};
+
+struct VLANEthernetHeader {
+    MACAddress dst_mac;
+    MACAddress src_mac;
+    VLAN8021QHeader vlan_8021q_header;
+    uint16_t type;
+    uint8_t payload[248];
+    uint32_t FCS;
+};
+#pragma pack(pop)
+
+#define VLAN_ETH_HDR_SIZE_EXCL_PAYLOAD       (sizeof(VLANEthernetHeader) - sizeof(VLANEthernetHeader::payload))
+#define VLAN_ETH_FCS(vlan_eth_hdr_ptr, payload_size) ( *(uint32_t *)((char *)((VLANEthernetHeader *)vlan_eth_hdr_ptr)->payload + payload_size) )
+
+static inline VLAN8021QHeader *isPacketVLANTagged(EthernetHeader *ethernet_header)
+{
+    if (ethernet_header->type == 0x8100) {
+        return reinterpret_cast<VLAN8021QHeader *>(ethernet_header->type);
+    }
+    return nullptr;
+}
+
+static inline uint8_t *getEthernetHeaderPayload(EthernetHeader *ethernet_header)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        return reinterpret_cast<VLANEthernetHeader *>(ethernet_header)->payload;
+    }
+    return ethernet_header->payload;
+}
+
+#define GET_COMMON_ETH_FCS(eth_hdr_ptr, payload_size)( *(uint32_t *)((char *)(getEthernetHeaderPayload(eth_hdr_ptr) + payload_size) )
+
+static inline void setCommonEthernetFCS(EthernetHeader *ethernet_header, uint32_t payload_size, uint32_t new_fcs)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        reinterpret_cast<VLANEthernetHeader *>(ethernet_header)->FCS = new_fcs;
+        return;
+    }
+    ethernet_header->FCS = new_fcs;
+}
+
+static inline uint32_t getEthernetHeaderSizeExcludingPayload(EthernetHeader *ethernet_header)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        return VLAN_ETH_HDR_SIZE_EXCL_PAYLOAD;
+    }
+    return ETH_HDR_SIZE_EXCL_PAYLOAD;
+}

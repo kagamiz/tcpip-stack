@@ -37,17 +37,36 @@ void dumpPacket(EthernetHeader *ethernet_header, uint32_t packet_size)
     std::cout << "Ethernet header :" << std::endl;
     std::cout << " * Destination MAC Address : " << static_cast<std::string>(ethernet_header->dst_mac) << std::endl;
     std::cout << " * Source MAC Address      : " << static_cast<std::string>(ethernet_header->src_mac) << std::endl;
-    std::cout << " * Ethernet Type           : " << ethernet_header->type << std::endl;
 
-    if (ethernet_header->type == ARP_MSG) {
-        dumpARPPacket(reinterpret_cast<ARPHeader *>(ethernet_header->payload), packet_size - ETH_HDR_SIZE_EXCL_PAYLOAD);
+    uint16_t type;
+    uint8_t *payload;
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        VLANEthernetHeader *vlan_ethernet_header = reinterpret_cast<VLANEthernetHeader *>(ethernet_header);
+        std::cout << " * VLAN ID                 : " << vlan_ethernet_header->vlan_8021q_header.getVLANID() << std::endl;
+        type = vlan_ethernet_header->type;
+        payload = vlan_ethernet_header->payload;
     }
-    /*
-    // TBD!!
-    if (ethernet_header->type == IP_MSG) {
-        dumpIPPacket(reinterprt_cast<IPHeader *>(ethernet_header->payload), packet_size - ETH_HDR_SIZE_EXCL_PAYLOAD);
+    else {
+        type = ethernet_header->type;
+        payload = ethernet_header->payload;
+    }
+
+    std::cout << " * Ethernet Type           : " << type << std::endl;
+
+    switch (type) {
+    case ARP_MSG:
+    {
+        dumpARPPacket(reinterpret_cast<ARPHeader *>(payload), packet_size - getEthernetHeaderSizeExcludingPayload(ethernet_header));
+        break;
+    }
+    /* TBD!
+    case IP_MSG:
+    {
+        dumpIPPacket(reinterprt_cast<IPHeader *>(ethernet_header->payload), packet_size - getEthernetHeaderSizeExcludingPayload(ethernet_header));
+        break;
     }
     */
+    }
 
     std::cout << "===  end  of " << __FUNCTION__ << " ===" << std::endl;
 }
