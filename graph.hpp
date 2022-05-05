@@ -175,6 +175,11 @@ public:
      */
     int receivePacket(char *packet, uint32_t packet_size);
 
+    const InterfaceNetworkProperty::L2Mode &getL2Mode() const
+    {
+        return intf_network_property.getL2Mode();
+    }
+
     void setL2Mode(const InterfaceNetworkProperty::L2Mode &mode)
     {
         intf_network_property.setL2Mode(mode);
@@ -341,6 +346,8 @@ public:
      * @param packet_size size of the data.
      */
     void sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size);
+
+    void sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, uint32_t packet_size);
 
 
     const ARPTable *getARPTable() const

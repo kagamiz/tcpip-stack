@@ -97,3 +97,12 @@ void deleteMACTable(MACTable *mac_table)
 {
     delete mac_table;
 }
+
+static void l2SwitchPerformMACLearning(Node *node, const MACAddress &src_mac, const std::string &if_name)
+{
+    MACTable *mac_table = const_cast<MACTable *>(node->getMACTable());
+    MACTableEntry entry;
+    entry.mac_addr = src_mac;
+    entry.oif_name = if_name;
+    mac_table->addEntry(&entry);
+}

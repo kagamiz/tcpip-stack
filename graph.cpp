@@ -309,6 +309,23 @@ void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t pack
     }
 }
 
+void Node::sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, uint32_t packet_size)
+{
+    for (auto &intf : intfs) {
+        if (!intf) {
+            continue;
+        }
+        if (intf == exempted_intf) {
+            continue;
+        }
+        if (intf->getL2Mode() != InterfaceNetworkProperty::L2Mode::ACCESS &&
+            intf->getL2Mode() != InterfaceNetworkProperty::L2Mode::TRUNK) {
+            continue;
+        }
+        intf->sendPacketOut(packet, packet_size);
+    }
+}
+
 void Node::dump() const
 {
     std::cout << "Node Name = " << node_name << ":" << std::endl;
