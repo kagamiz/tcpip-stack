@@ -16,6 +16,7 @@
 
  // forward declaration
 class ARPTable;
+class MACTable;
 
 /**
  * @class IPAddress
@@ -179,6 +180,11 @@ public:
         return arp_table;
     }
 
+    const MACTable *getMACTable() const
+    {
+        return mac_table;
+    }
+
     /**
      * @brief outputs a detail of this node property on the standard output
      *
@@ -189,6 +195,7 @@ private:
 
     /* L2 properties */
     ARPTable *arp_table;
+    MACTable *mac_table;
 
     /* L3 properties */
     bool is_loopback_addr_configured;

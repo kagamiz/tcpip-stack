@@ -243,16 +243,3 @@ static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeade
     }
     sendARPReplyMessage(ethernet_header, iif);
 }
-
-void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const InterfaceNetworkProperty::L2Mode &mode)
-{
-    Interface *intf = node->getNodeInterfaceByName(interface_name);
-    if (!intf) {
-        return;
-    }
-    if (intf->isL3Mode()) {
-        std::cout << "Error : interface " << interface_name << " is working as L3 Mode. Please unset the IP address to change the L2 mode." << std::endl;
-        return;
-    }
-    intf->setL2Mode(mode);
-}
