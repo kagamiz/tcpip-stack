@@ -175,6 +175,16 @@ public:
      */
     int receivePacket(char *packet, uint32_t packet_size);
 
+    const InterfaceNetworkProperty::L2Mode &getL2Mode() const
+    {
+        return intf_network_property.getL2Mode();
+    }
+
+    void setL2Mode(const InterfaceNetworkProperty::L2Mode &mode)
+    {
+        intf_network_property.setL2Mode(mode);
+    }
+
     /**
      * @brief outputs a detail of this interface on the standard output.
      *
@@ -337,10 +347,17 @@ public:
      */
     void sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t packet_size);
 
+    void sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, uint32_t packet_size);
+
 
     const ARPTable *getARPTable() const
     {
         return node_network_property.getARPTable();
+    }
+
+    const MACTable *getMACTable() const
+    {
+        return node_network_property.getMACTable();
     }
 
     /**

@@ -8,7 +8,8 @@ OBJS=graph.o \
 	 color.o \
 	 nwcli.o \
 	 comm.o \
-	 Layer2/layer2.o
+	 Layer2/layer2.o \
+	 Layer2/l2switch.o
 
 test.out:testapp.o ${OBJS} CommandParser/libcli.a
 	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test.out ${LIBS}
@@ -37,11 +38,15 @@ comm.o:comm.cpp
 Layer2/layer2.o:Layer2/layer2.cpp
 	${CXX} ${CFLAGS} -c -I . Layer2/layer2.cpp -o Layer2/layer2.o
 
+Layer2/l2switch.o:Layer2/l2switch.cpp
+	${CXX} ${CFLAGS} -c -I . Layer2/l2switch.cpp -o Layer2/l2switch.o
+
 CommandParser/libcli.a:
 	(cd CommandParser; make)
 
 clean:
 	rm -f *.o
+	rm -f Layer2/*.o
 	rm -f *.out
 	(cd CommandParser; make clean)
 

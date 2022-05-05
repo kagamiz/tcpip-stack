@@ -19,7 +19,7 @@ Graph *topo;
 int main()
 {
     nw_init_cli();
-    topo = build_first_topo();
+    topo = build_simple_l2_switch_topo();
 
     // wait for few seconds to ensure receiver thread is ready
     std::this_thread::sleep_for(std::chrono::seconds(2));

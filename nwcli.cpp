@@ -18,6 +18,7 @@
 #include "graph.hpp"
 
 #include "Layer2/layer2.hpp"
+#include "Layer2/l2switch.hpp"
 
 extern Graph *topo;
 
@@ -86,6 +87,30 @@ int show_arp_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disa
         Node *node = topo->getNodeByNodeName(node_name);
         node->getARPTable()->dump();
         break;
+    }
+    }
+    return 0;
+}
+
+int show_mac_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    int cmd_code = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+    std::string node_name;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv)
+    {
+        if (std::string(tlv->leaf_id) == "node-name") {
+            node_name = tlv->value;
+        }
+    } TLV_LOOP_END;
+
+    switch (cmd_code) {
+    case CMDCODE_SHOW_MAC:
+    {
+        Node *node = topo->getNodeByNodeName(node_name);
+        node->getMACTable()->dump();
     }
     }
     return 0;
@@ -186,6 +211,22 @@ void nw_init_cli()
                 );
                 libcli_register_param(&node_name, &arp);
                 set_param_cmd_code(&arp, CMDCODE_SHOW_ARP);
+            }
+
+            {
+                static param_t mac;
+                init_param(
+                    &mac,
+                    CMD,
+                    "mac",
+                    show_mac_handler,
+                    0,
+                    INVALID,
+                    0,
+                    "Help : mac"
+                );
+                libcli_register_param(&node_name, &mac);
+                set_param_cmd_code(&mac, CMDCODE_SHOW_MAC);
             }
         }
     }

@@ -16,6 +16,9 @@
 extern ARPTable *getNewARPTable();
 extern void deleteARPTable(ARPTable *arp_table);
 
+extern MACTable *getNewMACTable();
+extern void deleteMACTable(MACTable *mac_table);
+
 MACAddress::MACAddress() :
     mac{ 0 }
 {
@@ -83,6 +86,7 @@ IPAddress IPAddress::applyMask(char mask_size) const
 
 NodeNetworkProperty::NodeNetworkProperty() :
     arp_table(getNewARPTable()),
+    mac_table(getNewMACTable()),
     is_loopback_addr_configured(false),
     loopback_addr("0.0.0.0")
 {
@@ -94,6 +98,11 @@ NodeNetworkProperty::~NodeNetworkProperty()
         deleteARPTable(arp_table);
     }
     arp_table = nullptr;
+
+    if (mac_table) {
+        deleteMACTable(mac_table);
+    }
+    mac_table = nullptr;
 }
 
 void NodeNetworkProperty::dump() const
@@ -107,6 +116,7 @@ void NodeNetworkProperty::dump() const
 
 InterfaceNetworkProperty::InterfaceNetworkProperty() :
     mac_addr(),
+    l2mode(L2Mode::L2_MODE_UNKOWN),
     is_ip_addr_configured(false),
     ip_addr("0.0.0.0"),
     mask(0)
@@ -123,6 +133,9 @@ void InterfaceNetworkProperty::dump() const
         << "  "
         << "MAC : "
         << static_cast<std::string>(mac_addr)
+        << "  "
+        << "L2 Mode : "
+        << getL2ModeStr()
         << std::endl;
 }
 

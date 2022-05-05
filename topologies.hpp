@@ -12,3 +12,4 @@
 
 Graph *build_first_topo();
 Graph *build_linear_topo();
+Graph *build_simple_l2_switch_topo();

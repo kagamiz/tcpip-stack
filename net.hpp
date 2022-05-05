@@ -16,6 +16,7 @@
 
  // forward declaration
 class ARPTable;
+class MACTable;
 
 /**
  * @class IPAddress
@@ -179,6 +180,11 @@ public:
         return arp_table;
     }
 
+    const MACTable *getMACTable() const
+    {
+        return mac_table;
+    }
+
     /**
      * @brief outputs a detail of this node property on the standard output
      *
@@ -189,6 +195,7 @@ private:
 
     /* L2 properties */
     ARPTable *arp_table;
+    MACTable *mac_table;
 
     /* L3 properties */
     bool is_loopback_addr_configured;
@@ -202,6 +209,13 @@ private:
  */
 class InterfaceNetworkProperty : public IPrinter {
 public:
+
+    enum class L2Mode {
+        ACCESS,
+        TRUNK,
+        L2_MODE_UNKOWN,
+    };
+
     /**
      * @brief Construct a new Interface Network Property object
      *
@@ -259,6 +273,7 @@ public:
         ip_addr = addr;
         mask = subnet_mask;
         is_ip_addr_configured = true;
+        l2mode = L2Mode::L2_MODE_UNKOWN;
     }
 
     /**
@@ -282,6 +297,21 @@ public:
         return is_ip_addr_configured;
     }
 
+    const L2Mode &getL2Mode() const
+    {
+        return l2mode;
+    }
+
+    const std::string &getL2ModeStr() const
+    {
+        return L2ModeStr[static_cast<int>(l2mode)];
+    }
+
+    void setL2Mode(const L2Mode &mode)
+    {
+        l2mode = mode;
+    }
+
     /**
      * @brief outputs a detail of this interface property on the standard output
      *
@@ -289,8 +319,15 @@ public:
     virtual void dump() const override;
 
 private:
+    inline static const std::string L2ModeStr[] = {
+        "access",
+        "trunk",
+        "L2_MODE_UNKNOWN",
+    };
+
     /* L2 properties */
     MACAddress mac_addr; // hard burnt in interface NIC
+    L2Mode l2mode;
 
     /* L3 properties */
     bool is_ip_addr_configured; /* set to true if IP address is configured

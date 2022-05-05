@@ -20,23 +20,9 @@
 
 #include "comm.hpp"
 
-#if 0
- // forward declaration
-struct ARPEntry;
-class ARPTable;
-
-extern ARPTable::ARPTable();
-
-bool addEntry(ARPEntry *arp_entry);
-ARPEntry *arpTableLookup(const std::string &ip_addr);
-void updateFromARPReply(ARPHeader *arp_header, Interface *iif);
-void deleteEntry(const std::string &ip_addr);
-
-virtual void dump() const override;
-#endif
-
 Interface::Interface(const std::string &name) :
     if_name(name.substr(0, MAX_INTF_NAME_LENGTH)),
+    intf_network_property(),
     att_node(nullptr),
     link(nullptr)
 {
@@ -161,6 +147,7 @@ void Interface::dump() const
 
 Node::Node(const std::string &name) :
     node_name(name.substr(0, MAX_NODE_NAME_LENGTH)),
+    node_network_property(),
     udp_port_number(0),
     udp_sock_fd(-1)
 {
@@ -316,6 +303,23 @@ void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t pack
             continue;
         }
         if (intf == exempted_intf) {
+            continue;
+        }
+        intf->sendPacketOut(packet, packet_size);
+    }
+}
+
+void Node::sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, uint32_t packet_size)
+{
+    for (auto &intf : intfs) {
+        if (!intf) {
+            continue;
+        }
+        if (intf == exempted_intf) {
+            continue;
+        }
+        if (intf->getL2Mode() != InterfaceNetworkProperty::L2Mode::ACCESS &&
+            intf->getL2Mode() != InterfaceNetworkProperty::L2Mode::TRUNK) {
             continue;
         }
         intf->sendPacketOut(packet, packet_size);
