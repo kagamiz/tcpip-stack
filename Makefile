@@ -46,6 +46,7 @@ CommandParser/libcli.a:
 
 clean:
 	rm -f *.o
+	rm -f Layer2/*.o
 	rm -f *.out
 	(cd CommandParser; make clean)
 

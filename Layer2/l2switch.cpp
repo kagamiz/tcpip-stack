@@ -83,7 +83,7 @@ void MACTable::dump() const
         std::cout <<
             "MAC : " <<
             static_cast<std::string>(mac_table_entry.mac_addr) <<
-            "| Intf : " <<
+            " | Intf : " <<
             mac_table_entry.oif_name <<
             std::endl;
     }
@@ -104,6 +104,7 @@ static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet,
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
     if (ethernet_header->dst_mac == MACAddress::BROADCAST_MAC_ADDRESS) {
         node->sendPacketFloodToL2Interface(recv_intf, packet, packet_size);
+        return;
     }
 
     MACTable *mac_table = const_cast<MACTable *>(node->getMACTable());
@@ -111,6 +112,7 @@ static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet,
 
     if (!mac_table_entry) {
         node->sendPacketFloodToL2Interface(recv_intf, packet, packet_size);
+        return;
     }
 
     Interface *oif = node->getNodeInterfaceByName(mac_table_entry->oif_name);

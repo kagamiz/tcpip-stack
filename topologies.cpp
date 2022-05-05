@@ -9,6 +9,7 @@
 #include "graph.hpp"
 
 #include "Layer2/layer2.hpp"
+#include "Layer2/l2switch.hpp"
 
 Graph *build_first_topo()
 {
