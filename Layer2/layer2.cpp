@@ -15,7 +15,11 @@
 #include <cassert>
 #include <iostream>
 
- /* function prototype declaration */
+ /* extern function prototype declaration */
+
+extern void l2SwitchRecvFrame(Interface *interface, char *packet, uint32_t packet_size);
+
+/* function prototype declaration */
 static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *ethernet_header);
 static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeader *ethernet_header);
 
@@ -31,26 +35,32 @@ void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t pa
 
     std::cout << "L2 Frame Accepted" << std::endl;
 
-    switch (ethernet_header->type) {
-    case ARP_MSG:
-    {
-        ARPHeader *arp_hdr = reinterpret_cast<ARPHeader *>(ethernet_header->payload);
-        switch (arp_hdr->op_code) {
-        case ARP_BROAD_REQ:
-            processARPBroadcastRequest(node, interface, ethernet_header);
-            break;
-        case ARP_REPLY:
-            processARPReplyMessage(node, interface, ethernet_header);
-            break;
+    if (interface->isL3Mode()) {
+        switch (ethernet_header->type) {
+        case ARP_MSG:
+        {
+            ARPHeader *arp_hdr = reinterpret_cast<ARPHeader *>(ethernet_header->payload);
+            switch (arp_hdr->op_code) {
+            case ARP_BROAD_REQ:
+                processARPBroadcastRequest(node, interface, ethernet_header);
+                break;
+            case ARP_REPLY:
+                processARPReplyMessage(node, interface, ethernet_header);
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+
         default:
+            // promotePacketToLayer3(node, interface, packet, packet_size);
             break;
         }
     }
-    break;
-
-    default:
-        // promotePacketToLayer3(node, interface, packet, packet_size);
-        break;
+    else if (interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::ACCESS ||
+             interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::TRUNK) {
+        l2SwitchRecvFrame(interface, packet, packet_size);
     }
 }
 

@@ -43,3 +43,5 @@ private:
 
 MACTable *getNewMACTable();
 void deleteMACTable(MACTable *mac_table);
+
+void l2SwitchRecvFrame(Interface *intf, char *packet, uint32_t packet_size);

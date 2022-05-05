@@ -7,6 +7,7 @@
  */
 
 #include "l2switch.hpp"
+#include "layer2.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -98,6 +99,27 @@ void deleteMACTable(MACTable *mac_table)
     delete mac_table;
 }
 
+static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet, uint32_t packet_size)
+{
+    EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
+    if (ethernet_header->dst_mac == MACAddress::BROADCAST_MAC_ADDRESS) {
+        node->sendPacketFloodToL2Interface(recv_intf, packet, packet_size);
+    }
+
+    MACTable *mac_table = const_cast<MACTable *>(node->getMACTable());
+    MACTableEntry *mac_table_entry = mac_table->MACTableLookup(ethernet_header->dst_mac);
+
+    if (!mac_table_entry) {
+        node->sendPacketFloodToL2Interface(recv_intf, packet, packet_size);
+    }
+
+    Interface *oif = node->getNodeInterfaceByName(mac_table_entry->oif_name);
+    if (!oif) {
+        return;
+    }
+    oif->sendPacketOut(packet, packet_size);
+}
+
 static void l2SwitchPerformMACLearning(Node *node, const MACAddress &src_mac, const std::string &if_name)
 {
     MACTable *mac_table = const_cast<MACTable *>(node->getMACTable());
@@ -105,4 +127,13 @@ static void l2SwitchPerformMACLearning(Node *node, const MACAddress &src_mac, co
     entry.mac_addr = src_mac;
     entry.oif_name = if_name;
     mac_table->addEntry(&entry);
+}
+
+void l2SwitchRecvFrame(Interface *intf, char *packet, uint32_t packet_size)
+{
+    Node *node = const_cast<Node *>(intf->getNode());
+    EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
+
+    l2SwitchPerformMACLearning(node, ethernet_header->src_mac, intf->getName());
+    l2SwitchForwardFrame(node, intf, packet, packet_size);
 }

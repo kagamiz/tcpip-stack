@@ -67,7 +67,7 @@ static inline EthernetHeader *ALLOC_ETH_HEADER_WITH_PAYLOAD(char *packet, uint32
 
 static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader *ethernet_hdr)
 {
-    if (!intf->isL3Mode()) {
+    if (!intf->isL3Mode() && intf->getL2Mode() == InterfaceNetworkProperty::L2Mode::L2_MODE_UNKOWN) {
         return false;
     }
 
