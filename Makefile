@@ -11,7 +11,8 @@ OBJS=graph.o \
 	 packet_dump.o \
 	 Layer2/layer2.o \
 	 Layer2/l2switch.o \
-	 Layer3/layer3.o
+	 Layer3/layer3.o \
+	 Layer5/ping.o
 
 test.out:testapp.o ${OBJS} CommandParser/libcli.a
 	${CXX} ${CFLAGS} testapp.o ${OBJS} -o test.out ${LIBS}
@@ -48,6 +49,9 @@ Layer2/l2switch.o:Layer2/l2switch.cpp
 
 Layer3/layer3.o:Layer3/layer3.cpp
 	${CXX} ${CFLAGS} -c -I . Layer3/layer3.cpp -o Layer3/layer3.o
+
+Layer5/ping.o:Layer5/ping.cpp
+	${CXX} ${CFLAGS} -c -I . Layer5/ping.cpp -o Layer5/ping.o
 
 CommandParser/libcli.a:
 	(cd CommandParser; make)

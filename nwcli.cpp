@@ -22,6 +22,8 @@
 
 #include "Layer3/layer3.hpp"
 
+#include "Layer5/ping.hpp"
+
 extern Graph *topo;
 
 /* Generic Topology Commands */
@@ -197,6 +199,34 @@ int l3_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_dis
             break;
         }
         }
+    }
+    }
+    return 0;
+}
+
+int ping_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    int cmd_code = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+    std::string node_name, ip_address;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv)
+    {
+        if (std::string(tlv->leaf_id) == "node-name") {
+            node_name = tlv->value;
+        }
+        if (std::string(tlv->leaf_id) == "ip-address") {
+            ip_address = tlv->value;
+        }
+    } TLV_LOOP_END;
+
+    switch (cmd_code) {
+    case CMDCODE_RUN_PING:
+    {
+        Node *node = topo->getNodeByNodeName(node_name);
+        layer5PingFunc(node, ip_address);
+        break;
     }
     }
     return 0;
@@ -398,6 +428,36 @@ void nw_init_cli()
                     );
                     libcli_register_param(&resolve_arp, &ip_address);
                     set_param_cmd_code(&ip_address, CMDCODE_RUN_RESOLVE_ARP);
+                }
+            }
+
+            {
+                static param_t ping;
+                init_param(
+                    &ping,
+                    CMD,
+                    "ping",
+                    0,
+                    0,
+                    INVALID,
+                    0,
+                    "Help : ping"
+                );
+                libcli_register_param(&node_name, &ping);
+                {
+                    static param_t ip_address;
+                    init_param(
+                        &ip_address,
+                        LEAF,
+                        0,
+                        ping_handler,
+                        validate_ipv4_address,
+                        IPV4,
+                        "ip-address",
+                        "Help : ip-address"
+                    );
+                    libcli_register_param(&ping, &ip_address);
+                    set_param_cmd_code(&ip_address, CMDCODE_RUN_PING);
                 }
             }
         }

@@ -13,4 +13,5 @@
 #define CMDCODE_SHOW_ARP                3
 #define CMDCODE_SHOW_MAC                4
 #define CMDCODE_SHOW_ROUTING_TABLE      5
-#define CMDCODE_CONFIG_REMOTE_ROUTE        6
+#define CMDCODE_CONFIG_REMOTE_ROUTE     6
+#define CMDCODE_RUN_PING                7

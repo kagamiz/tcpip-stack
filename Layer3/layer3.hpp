@@ -6,6 +6,8 @@
  * @date 2022-05-06
  */
 
+#pragma once
+
 #include <list>
 #include <string>
 
