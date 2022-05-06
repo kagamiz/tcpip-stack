@@ -213,3 +213,39 @@ Graph *build_dualswitch_topo()
 
     return topo;
 }
+
+/**
+
+                                        +---------|                                  +----------+
++--------+                              |         |                                  |R3        |
+|R1      |eth0/1                  eth0/2|R2       |eth0/3                      eth0/4|122.1.1.3 |
+|122.1.1.1+-----------------------------+122.1.1.2|+---------------------------------+          |
+|        |10.1.1.1/24        10.1.1.2/24|         |11.1.1.2/24            11.1.1.1/24|          |
++--------+                              +-------+-|                                  +----------+
+
+*/
+
+Graph *linear_3_node_topo()
+{
+    Graph *topo = new Graph("3 node linerar topo");
+    Node *R1 = topo->addNode("R1");
+    Node *R2 = topo->addNode("R2");
+    Node *R3 = topo->addNode("R3");
+
+    topo->insertLinkBetweenTwoNodes(R1, R2, "eth0/1", "eth0/2", 1);
+    topo->insertLinkBetweenTwoNodes(R2, R3, "eth0/3", "eth0/4", 1);
+
+    R1->setLoopbackAddress("122.1.1.1");
+    R1->setInterfaceIPAddress("eth0/1", "10.1.1.1", 24);
+
+    R2->setLoopbackAddress("122.1.1.2");
+    R2->setInterfaceIPAddress("eth0/2", "10.1.1.2", 24);
+    R2->setInterfaceIPAddress("eth0/3", "11.1.1.2", 24);
+
+    R3->setLoopbackAddress("122.1.1.3");
+    R3->setInterfaceIPAddress("eth0/4", "11.1.1.1", 24);
+
+    topo->startPacketReceiverThread();
+
+    return topo;
+}

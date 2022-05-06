@@ -13,3 +13,4 @@
 Graph *build_first_topo();
 Graph *build_simple_l2_switch_topo();
 Graph *build_dualswitch_topo();
+Graph *linear_3_node_topo();

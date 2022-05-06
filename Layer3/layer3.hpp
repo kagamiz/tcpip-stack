@@ -44,13 +44,15 @@ public:
     void addDirectRoute(const IPAddress &dst, char mask);
     void addRoute(const IPAddress &dst, char mask, const std::string &gateway, const std::string &oif);
     const L3Route *lookupLPM(const IPAddress &dest_ip) const;
+    void deleteEntry(const IPAddress &ip_addr, char mask);
 
     virtual void dump() const override;
 private:
     const L3Route *lookup(const IPAddress &ip_addr, char mask) const;
-    void deleteEntry(const IPAddress &ip_addr, char mask);
     std::list<L3Route> routing_table;
 };
 
 RoutingTable *getNewRoutingTable();
 void deleteRoutingTable(RoutingTable *routing_table);
+
+void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);

@@ -308,9 +308,12 @@ Interface *Node::getMatchingSubnetInterface(const std::string &ip_addr)
     return *result;
 }
 
+extern void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
+
 bool Node::setLoopbackAddress(const std::string &ip_addr)
 {
     node_network_property.setLoopbackAddress(IPAddress(ip_addr));
+    addDirectRouteEntryToRoutingTable(const_cast<RoutingTable *>(this->getRoutingTable()), ip_addr, 32);
     return true;
 }
 
@@ -321,6 +324,7 @@ bool Node::setInterfaceIPAddress(const std::string &if_name, const std::string &
         return false;
     }
     intf->setIPAddress(ip_addr, mask);
+    addDirectRouteEntryToRoutingTable(const_cast<RoutingTable *>(this->getRoutingTable()), ip_addr, mask);
     return true;
 }
 

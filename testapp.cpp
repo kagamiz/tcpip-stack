@@ -19,7 +19,7 @@ Graph *topo;
 int main()
 {
     nw_init_cli();
-    topo = build_dualswitch_topo();
+    topo = linear_3_node_topo();
 
     // wait for few seconds to ensure receiver thread is ready
     std::this_thread::sleep_for(std::chrono::seconds(2));

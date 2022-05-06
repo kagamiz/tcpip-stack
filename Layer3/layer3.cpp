@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include "../color.hpp"
+
 L3Route::L3Route() :
     dest(0),
     mask(0),
@@ -39,7 +41,7 @@ void RoutingTable::addDirectRoute(const IPAddress &dst, char mask)
 void RoutingTable::addRoute(const IPAddress &dst, char mask, const std::string &gateway, const std::string &oif)
 {
     IPAddress dst_subnet = dst.applyMask(mask);
-    L3Route route(dst_subnet, mask, !gateway.empty(), IPAddress(gateway), oif);
+    L3Route route(dst_subnet, mask, gateway.empty(), IPAddress(gateway), oif);
 
     if (const L3Route *old_route = lookup(dst_subnet, mask); old_route) {
         deleteEntry(old_route->dest, old_route->mask);
@@ -83,11 +85,11 @@ void RoutingTable::dump() const
     for (const auto &route : routing_table) {
         std::cout
             << "    * "
-            << static_cast<std::string>(route.dest) << "/" << static_cast<int>(route.mask)
+            << getColoredString(static_cast<std::string>(route.dest), "Light Red") << "/" << static_cast<int>(route.mask) << "\t"
             << " | "
-            << (route.is_direct ? "NA" : static_cast<std::string>(route.gateway_ip))
+            << (route.is_direct ? "NA" : getColoredString(static_cast<std::string>(route.gateway_ip), "Light Red")) << "\t"
             << " | "
-            << (route.is_direct ? "NA" : route.oif)
+            << (route.is_direct ? "NA" : route.oif) << "\t"
             << std::endl;
     }
 }
@@ -109,4 +111,9 @@ RoutingTable *getNewRoutingTable()
 void deleteRoutingTable(RoutingTable *routing_table)
 {
     delete routing_table;
+}
+
+void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask)
+{
+    routing_table->addDirectRoute(IPAddress(ip_addr), mask);
 }

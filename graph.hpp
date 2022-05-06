@@ -371,6 +371,11 @@ public:
         return node_network_property.getMACTable();
     }
 
+    const RoutingTable *getRoutingTable() const
+    {
+        return node_network_property.getRoutingTable();
+    }
+
     /**
      * @brief outputs a detail of this node on the standard output
      *

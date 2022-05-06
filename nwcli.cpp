@@ -20,6 +20,8 @@
 #include "Layer2/layer2.hpp"
 #include "Layer2/l2switch.hpp"
 
+#include "Layer3/layer3.hpp"
+
 extern Graph *topo;
 
 /* Generic Topology Commands */
@@ -111,6 +113,90 @@ int show_mac_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disa
     {
         Node *node = topo->getNodeByNodeName(node_name);
         node->getMACTable()->dump();
+        break;
+    }
+    }
+    return 0;
+}
+
+int show_rt_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    int cmd_code = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+    std::string node_name;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv)
+    {
+        if (std::string(tlv->leaf_id) == "node-name") {
+            node_name = tlv->value;
+        }
+    } TLV_LOOP_END;
+
+    switch (cmd_code) {
+    case CMDCODE_SHOW_ROUTING_TABLE:
+    {
+        Node *node = topo->getNodeByNodeName(node_name);
+        node->getRoutingTable()->dump();
+        break;
+    }
+    }
+    return 0;
+}
+
+int l3_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    int cmd_code = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+    std::string node_name, dest, mask, gw_ip, oif_name;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv)
+    {
+        if (std::string(tlv->leaf_id) == "node-name") {
+            node_name = tlv->value;
+        }
+        if (std::string(tlv->leaf_id) == "dest") {
+            dest = tlv->value;
+        }
+        if (std::string(tlv->leaf_id) == "mask") {
+            mask = tlv->value;
+        }
+        if (std::string(tlv->leaf_id) == "gw-ip") {
+            gw_ip = tlv->value;
+        }
+        if (std::string(tlv->leaf_id) == "oif-name") {
+            oif_name = tlv->value;
+        }
+    } TLV_LOOP_END;
+
+    Node *node = topo->getNodeByNodeName(node_name);
+    switch (cmd_code) {
+    case CMDCODE_CONFIG_REMOTE_ROUTE:
+    {
+        switch (enable_or_disable) {
+        case CONFIG_ENABLE:
+        {
+            Interface *intf = node->getNodeInterfaceByName(oif_name);
+            if (!intf) {
+                std::cout << "Config Error : Non existing interface : " << oif_name << std::endl;
+                return -1;
+            }
+            if (!intf->isL3Mode()) {
+                std::cout << "Config Error : Not L3 mode interface : " << oif_name << std::endl;
+                return -1;
+            }
+            RoutingTable *routing_table = const_cast<RoutingTable *>(node->getRoutingTable());
+            routing_table->addRoute(IPAddress(dest), std::stoi(mask), gw_ip, oif_name);
+            break;
+        }
+        case CONFIG_DISABLE:
+        {
+            RoutingTable *routing_table = const_cast<RoutingTable *>(node->getRoutingTable());
+            routing_table->deleteEntry(IPAddress(dest), std::stoi(mask));
+            break;
+        }
+        }
     }
     }
     return 0;
@@ -130,6 +216,16 @@ int validate_ipv4_address(char *value)
     std::cmatch m;
     if (!std::regex_search(value, m, std::regex("^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"))) {
         std::cout << getColoredString("Error : wrong IPv4 format.", "Red") << std::endl;
+        return VALIDATION_FAILED;
+    }
+    return VALIDATION_SUCCESS;
+}
+
+int validate_mask(char *value)
+{
+    std::cmatch m;
+    if (!std::regex_search(value, m, std::regex("^([12]?[0-9]|3[012])$"))) {
+        std::cout << getColoredString("Error : wrong mask value.", "Red") << std::endl;
         return VALIDATION_FAILED;
     }
     return VALIDATION_SUCCESS;
@@ -228,6 +324,22 @@ void nw_init_cli()
                 libcli_register_param(&node_name, &mac);
                 set_param_cmd_code(&mac, CMDCODE_SHOW_MAC);
             }
+
+            {
+                static param_t rt;
+                init_param(
+                    &rt,
+                    CMD,
+                    "rt",
+                    show_rt_handler,
+                    0,
+                    INVALID,
+                    0,
+                    "Help : rt"
+                );
+                libcli_register_param(&node_name, &rt);
+                set_param_cmd_code(&rt, CMDCODE_SHOW_ROUTING_TABLE);
+            }
         }
     }
 
@@ -286,6 +398,108 @@ void nw_init_cli()
                     );
                     libcli_register_param(&resolve_arp, &ip_address);
                     set_param_cmd_code(&ip_address, CMDCODE_RUN_RESOLVE_ARP);
+                }
+            }
+        }
+    }
+
+    {
+        /* config node */
+        static param_t node;
+        init_param(
+            &node,
+            CMD,
+            "node",
+            0,
+            0,
+            INVALID,
+            0,
+            "Help : Node"
+        );
+        libcli_register_param(config, &node);
+        {
+            static param_t node_name;
+            init_param(
+                &node_name,
+                LEAF,
+                0,
+                0,
+                validate_node_name,
+                STRING,
+                "node-name",
+                "Help : Node name"
+            );
+            libcli_register_param(&node, &node_name);
+
+            {
+                static param_t route;
+                init_param(
+                    &route,
+                    CMD,
+                    "route",
+                    0,
+                    0,
+                    INVALID,
+                    0,
+                    "Help : route"
+                );
+                libcli_register_param(&node_name, &route);
+                {
+                    static param_t dest;
+                    init_param(
+                        &dest,
+                        LEAF,
+                        0,
+                        0,
+                        validate_ipv4_address,
+                        IPV4,
+                        "dest",
+                        "Help : destination IP address"
+                    );
+                    libcli_register_param(&route, &dest);
+                    {
+                        static param_t mask;
+                        init_param(
+                            &mask,
+                            LEAF,
+                            0,
+                            0,
+                            validate_mask,
+                            INT,
+                            "mask",
+                            "Help : mask bit length"
+                        );
+                        libcli_register_param(&dest, &mask);
+                        {
+                            static param_t gw_ip;
+                            init_param(
+                                &gw_ip,
+                                LEAF,
+                                0,
+                                0,
+                                validate_ipv4_address,
+                                IPV4,
+                                "gw-ip",
+                                "Help : gateway IP address"
+                            );
+                            libcli_register_param(&mask, &gw_ip);
+                            {
+                                static param_t oif;
+                                init_param(
+                                    &oif,
+                                    LEAF,
+                                    0,
+                                    l3_config_handler,
+                                    0,
+                                    STRING,
+                                    "oif-name",
+                                    "Help : outgoing interface name"
+                                );
+                                libcli_register_param(&gw_ip, &oif);
+                                set_param_cmd_code(&oif, CMDCODE_CONFIG_REMOTE_ROUTE);
+                            }
+                        }
+                    }
                 }
             }
         }

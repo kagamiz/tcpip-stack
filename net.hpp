@@ -187,6 +187,11 @@ public:
         return mac_table;
     }
 
+    const RoutingTable *getRoutingTable() const
+    {
+        return routing_table;
+    }
+
     /**
      * @brief outputs a detail of this node property on the standard output
      *
