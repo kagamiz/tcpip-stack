@@ -65,25 +65,84 @@ static inline EthernetHeader *ALLOC_ETH_HEADER_WITH_PAYLOAD(char *packet, uint32
     return (EthernetHeader *)head_position;
 }
 
-static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader *ethernet_hdr)
+static inline bool l2FrameRecvQualifyOnInterfaceAccessMode(Interface *intf, EthernetHeader *ethernet_header, uint32_t *output_vlan_id)
 {
-    if (!intf->isL3Mode()) {
-        if (intf->getL2Mode() == InterfaceNetworkProperty::L2Mode::L2_MODE_UNKOWN) {
-            return false;
-        }
-        return true;
+    // when tagged packet has arrived on access mode, simply drop the packet
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        return false;
+    }
+
+    // untagged packet has arrived. set VLAN ID to ID which access mode node carries.
+    *output_vlan_id = intf->getVLANID();
+    return true;
+}
+
+static inline bool l2FrameRecvQualifyOnInterfaceTrunkMode(Interface *intf, EthernetHeader *ethernet_header, uint32_t *output_vlan_id)
+{
+    // output_vlan_id is not used on trunk mode
+    (void)output_vlan_id;
+
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); !p) {
+        return false;
+    }
+    VLANEthernetHeader *vlan_ethernet_header = reinterpret_cast<VLANEthernetHeader *>(ethernet_header);
+
+    return intf->isVLANMember(vlan_ethernet_header->vlan_8021q_header.getVLANID());
+}
+
+static inline bool l2FrameRecvQualifyOnInterfaceL2Mode(Interface *intf, EthernetHeader *ethernet_header, uint32_t *output_vlan_id)
+{
+    bool will_accept = false;
+    switch (intf->getL2Mode()) {
+    case InterfaceNetworkProperty::L2Mode::ACCESS:
+    {
+        will_accept = l2FrameRecvQualifyOnInterfaceAccessMode(intf, ethernet_header, output_vlan_id);
+        break;
+    }
+    case InterfaceNetworkProperty::L2Mode::TRUNK:
+    {
+        will_accept = l2FrameRecvQualifyOnInterfaceTrunkMode(intf, ethernet_header, output_vlan_id);
+        break;
+    }
+    case InterfaceNetworkProperty::L2Mode::L2_MODE_UNKOWN:
+    {
+        // drop the packet
+        will_accept = false;
+        break;
+    }
+    }
+
+    return will_accept;
+}
+
+static inline bool l2FrameRecvQualifyOnInterfaceL3Mode(Interface *intf, EthernetHeader *ethernet_header, uint32_t *output_vlan_id)
+{
+    // output_vlan_id is not used in L3 Mode
+    (void)output_vlan_id;
+
+    /* Return false if interface is on L3 Mode and packet is VLAN tagged */
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        return false;
     }
 
     /* Return true if receiving machine must accept the frame */
-    if (intf->getMACAddress() == ethernet_hdr->dst_mac) {
+    if (intf->getMACAddress() == ethernet_header->dst_mac) {
         return true;
     }
 
-    if (ethernet_hdr->dst_mac == MACAddress::BROADCAST_MAC_ADDRESS) {
+    if (ethernet_header->dst_mac == MACAddress::BROADCAST_MAC_ADDRESS) {
         return true;
     }
 
     return false;
+}
+
+static inline bool l2FrameRecvQualifyOnInterface(Interface *intf, EthernetHeader *ethernet_hdr, uint32_t *output_vlan_id)
+{
+    if (intf->isL3Mode()) {
+        return l2FrameRecvQualifyOnInterfaceL3Mode(intf, ethernet_hdr, output_vlan_id);
+    }
+    return l2FrameRecvQualifyOnInterfaceL2Mode(intf, ethernet_hdr, output_vlan_id);
 }
 
 void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size);

@@ -28,7 +28,8 @@ void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t pa
     /* Entry point into TCP/IP from bottom */
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
 
-    if (!l2FrameRecvQualifyOnInterface(interface, ethernet_header)) {
+    uint32_t vlan_id_to_tag = 0;
+    if (!l2FrameRecvQualifyOnInterface(interface, ethernet_header, &vlan_id_to_tag)) {
         std::cout << "L2 Frame Rejected" << std::endl;
         return;
     }
@@ -60,6 +61,11 @@ void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t pa
     }
     else if (interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::ACCESS ||
              interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::TRUNK) {
+        if (vlan_id_to_tag) {
+            uint32_t new_packet_size = 0;
+            packet = reinterpret_cast<char *>(tagPacketWithVLANID(reinterpret_cast<EthernetHeader *>(packet), packet_size, vlan_id_to_tag, &new_packet_size));
+            packet_size = new_packet_size;
+        }
         l2SwitchRecvFrame(interface, packet, packet_size);
     }
 }

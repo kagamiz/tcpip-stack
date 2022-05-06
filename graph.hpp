@@ -184,6 +184,18 @@ public:
 
     void setVLANMemberships(uint32_t vlan_id);
 
+    bool isVLANMember(uint32_t vlan_id) const
+    {
+        return intf_network_property.isVLANMember(vlan_id);
+    }
+
+    const uint32_t &getVLANID() const
+    {
+        return intf_network_property.getVLANID();
+    }
+
+
+
     /**
      * @brief outputs a detail of this interface on the standard output.
      *

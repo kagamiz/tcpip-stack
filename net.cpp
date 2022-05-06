@@ -177,6 +177,15 @@ void InterfaceNetworkProperty::addVLANMemberships(uint32_t vlan_id)
     return;
 }
 
+const uint32_t &InterfaceNetworkProperty::getVLANID() const
+{
+    if (l2mode != InterfaceNetworkProperty::L2Mode::ACCESS) {
+        std::cout << "Error : " << __FUNCTION__ << " is not supposed to be called on L2 Mode " << getL2ModeStr() << std::endl;
+        return 0;
+    }
+    return *std::begin(vlans);
+}
+
 void InterfaceNetworkProperty::dump() const
 {
     std::cout
