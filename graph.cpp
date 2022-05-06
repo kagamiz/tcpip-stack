@@ -367,6 +367,8 @@ void Node::sendPacketFlood(Interface *exempted_intf, char *packet, uint32_t pack
     }
 }
 
+extern void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t packet_size);
+
 void Node::sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, uint32_t packet_size)
 {
     for (auto &intf : intfs) {
@@ -380,7 +382,7 @@ void Node::sendPacketFloodToL2Interface(Interface *exempted_intf, char *packet, 
             intf->getL2Mode() != InterfaceNetworkProperty::L2Mode::TRUNK) {
             continue;
         }
-        intf->sendPacketOut(packet, packet_size);
+        l2SwitchSendPacketOut(this, intf, packet, packet_size);
     }
 }
 

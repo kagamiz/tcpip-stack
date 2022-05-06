@@ -132,6 +132,11 @@ void InterfaceNetworkProperty::resetVLANSetting()
 
 bool InterfaceNetworkProperty::isVLANMember(uint32_t vlan_id) const
 {
+    // 0 is invalid for VLAN ID.
+    if (vlan_id == 0) {
+        return false;
+    }
+
     auto result = std::find_if(
         std::begin(vlans),
         std::end(vlans),

@@ -46,6 +46,7 @@ void deleteMACTable(MACTable *mac_table);
 
 /* L2 Switching APIs */
 void l2SwitchRecvFrame(Interface *intf, char *packet, uint32_t packet_size);
+void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t packet_size);
 
 /* VLAN APIs */
 void nodeSetInterfaceVLANMembership(Node *node, const std::string &interface_name, uint32_t vlan_id);

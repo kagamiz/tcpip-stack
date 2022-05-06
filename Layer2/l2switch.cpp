@@ -10,6 +10,7 @@
 #include "layer2.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 
 void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const InterfaceNetworkProperty::L2Mode &mode)
@@ -103,6 +104,44 @@ void deleteMACTable(MACTable *mac_table)
     delete mac_table;
 }
 
+void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t packet_size)
+{
+    if (intf->isL3Mode()) {
+        std::cout << "Error : tried to forward L2 Switch frame on L3 mode interface." << std::endl;
+        assert(false);
+    }
+
+    EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
+    uint32_t vlan_id = 0;
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        vlan_id = p->getVLANID();
+    }
+
+    switch (intf->getL2Mode()) {
+    case InterfaceNetworkProperty::L2Mode::ACCESS:
+    {
+        if (vlan_id != intf->getVLANID()) {
+            break;
+        }
+        if (vlan_id) {
+            uint32_t new_packet_size = 0;
+            ethernet_header = untagPacketWithVLANID(ethernet_header, packet_size, &new_packet_size);
+            packet_size = new_packet_size;
+        }
+        intf->sendPacketOut(reinterpret_cast<char *>(ethernet_header), packet_size);
+        break;
+    }
+    case InterfaceNetworkProperty::L2Mode::TRUNK:
+    {
+        if (!intf->isVLANMember(vlan_id)) {
+            break;
+        }
+        intf->sendPacketOut(reinterpret_cast<char *>(ethernet_header), packet_size);
+        break;
+    }
+    }
+}
+
 static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet, uint32_t packet_size)
 {
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
@@ -123,7 +162,7 @@ static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet,
     if (!oif) {
         return;
     }
-    oif->sendPacketOut(packet, packet_size);
+    l2SwitchSendPacketOut(node, oif, packet, packet_size);
 }
 
 static void l2SwitchPerformMACLearning(Node *node, const MACAddress &src_mac, const std::string &if_name)
