@@ -10,20 +10,25 @@
 #include "layer2.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 
- /* L2 Switching APIs */
 void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const InterfaceNetworkProperty::L2Mode &mode)
 {
     Interface *intf = node->getNodeInterfaceByName(interface_name);
     if (!intf) {
         return;
     }
-    if (intf->isL3Mode()) {
-        std::cout << "Error : interface " << interface_name << " is working as L3 Mode. Please unset the IP address to change the L2 mode." << std::endl;
+    intf->setL2Mode(mode);
+}
+
+void nodeSetInterfaceVLANMembership(Node *node, const std::string &interface_name, uint32_t vlan_id)
+{
+    Interface *intf = node->getNodeInterfaceByName(interface_name);
+    if (!intf) {
         return;
     }
-    intf->setL2Mode(mode);
+    intf->setVLANMemberships(vlan_id);
 }
 
 MACTableEntry::MACTableEntry() :
@@ -99,6 +104,60 @@ void deleteMACTable(MACTable *mac_table)
     delete mac_table;
 }
 
+extern void dumpPacket(EthernetHeader *ethernet_header, uint32_t packet_size);
+
+void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t packet_size)
+{
+    if (intf->isL3Mode()) {
+        std::cout << "Error : tried to forward L2 Switch frame on L3 mode interface." << std::endl;
+        assert(false);
+    }
+
+    EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
+    uint32_t vlan_id = 0;
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        vlan_id = p->getVLANID();
+    }
+
+    char *packet_tmp = new char[packet_size];
+    char *packet_tmp_header = packet_tmp;
+    memcpy(packet_tmp, packet, packet_size);
+
+    switch (intf->getL2Mode()) {
+    case InterfaceNetworkProperty::L2Mode::ACCESS:
+    {
+        if (!intf->getVLANID()) {
+            std::cout << "Error : interface on L2 Access mode need to operate in a VLAN, but VLAN ID is not assigned." << std::endl;
+            assert(false);
+        }
+        if (vlan_id != intf->getVLANID()) {
+            break;
+        }
+        if (vlan_id) {
+            uint32_t new_packet_size = 0;
+            packet_tmp = reinterpret_cast<char *>(untagPacketWithVLANID(reinterpret_cast<EthernetHeader *>(packet_tmp), packet_size, &new_packet_size));
+            packet_size = new_packet_size;
+        }
+        intf->sendPacketOut(packet_tmp, packet_size);
+        break;
+    }
+    case InterfaceNetworkProperty::L2Mode::TRUNK:
+    {
+        if (!intf->isVLANMember(vlan_id)) {
+            break;
+        }
+        intf->sendPacketOut(packet_tmp, packet_size);
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+
+    delete[] packet_tmp_header;
+}
+
 static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet, uint32_t packet_size)
 {
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
@@ -119,7 +178,7 @@ static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet,
     if (!oif) {
         return;
     }
-    oif->sendPacketOut(packet, packet_size);
+    l2SwitchSendPacketOut(node, oif, packet, packet_size);
 }
 
 static void l2SwitchPerformMACLearning(Node *node, const MACAddress &src_mac, const std::string &if_name)

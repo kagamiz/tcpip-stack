@@ -28,7 +28,8 @@ void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t pa
     /* Entry point into TCP/IP from bottom */
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
 
-    if (!l2FrameRecvQualifyOnInterface(interface, ethernet_header)) {
+    uint32_t vlan_id_to_tag = 0;
+    if (!l2FrameRecvQualifyOnInterface(interface, ethernet_header, &vlan_id_to_tag)) {
         std::cout << "L2 Frame Rejected" << std::endl;
         return;
     }
@@ -60,6 +61,11 @@ void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t pa
     }
     else if (interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::ACCESS ||
              interface->getL2Mode() == InterfaceNetworkProperty::L2Mode::TRUNK) {
+        if (vlan_id_to_tag) {
+            uint32_t new_packet_size = 0;
+            packet = reinterpret_cast<char *>(tagPacketWithVLANID(reinterpret_cast<EthernetHeader *>(packet), packet_size, vlan_id_to_tag, &new_packet_size));
+            packet_size = new_packet_size;
+        }
         l2SwitchRecvFrame(interface, packet, packet_size);
     }
 }
@@ -194,7 +200,7 @@ static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *e
 
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr)
 {
-    EthernetHeader *ethenet_header = (EthernetHeader *)(new char[ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader)]);
+    EthernetHeader *ethenet_header = (EthernetHeader *)(new char[MAX_PACKET_BUFFER_SIZE]);
 
     if (!oif) {
         oif = node->getMatchingSubnetInterface(IPAddress(ip_addr));
@@ -230,7 +236,9 @@ void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_a
     ETH_FCS(ethenet_header, sizeof(ARPHeader)) = 0; // unused
 
     /* STEP 3 : Now dispatch the ARP Broadcast Request Packet out of interface */
-    oif->sendPacketOut(reinterpret_cast<char *>(ethenet_header), ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader));
+    uint32_t total_packet_size = ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader);
+    char *shifted_packet_buffer = packetBufferShiftRight(reinterpret_cast<char *>(ethenet_header), total_packet_size, MAX_PACKET_BUFFER_SIZE);
+    oif->sendPacketOut(reinterpret_cast<char *>(shifted_packet_buffer), total_packet_size);
 
     delete[] ethenet_header;
 }
@@ -252,4 +260,45 @@ static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeade
         return;
     }
     sendARPReplyMessage(ethernet_header, iif);
+}
+
+/* VLAN APIs */
+VLANEthernetHeader *tagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, int32_t vlan_id, uint32_t *new_packet_size)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        VLANEthernetHeader *vlan_ethernet_header = reinterpret_cast<VLANEthernetHeader *>(ethernet_header);
+        vlan_ethernet_header->vlan_8021q_header.tci_vid = vlan_id;
+        *new_packet_size = total_packet_size;
+        return vlan_ethernet_header;
+    }
+    char *head_position = reinterpret_cast<char *>(ethernet_header) - sizeof(VLAN8021QHeader);
+    char *iterator = head_position;
+    // dst_mac
+    memmove(iterator, &ethernet_header->dst_mac, sizeof(MACAddress));
+    iterator += sizeof(MACAddress);
+    // src_mac
+    memmove(iterator, &ethernet_header->src_mac, sizeof(MACAddress));
+    iterator += sizeof(MACAddress);
+    VLAN8021QHeader *vlan_8021q_header = reinterpret_cast<VLAN8021QHeader *>(iterator);
+    vlan_8021q_header->tpid = 0x8100;
+    vlan_8021q_header->tci_dei = 0;
+    vlan_8021q_header->tci_pcp = 0;
+    vlan_8021q_header->tci_vid = vlan_id;
+    *new_packet_size = total_packet_size + sizeof(VLAN8021QHeader);
+    return reinterpret_cast<VLANEthernetHeader *>(head_position);
+}
+
+EthernetHeader *untagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, uint32_t *new_packet_size)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); !p) {
+        *new_packet_size = total_packet_size;
+        return ethernet_header;
+    }
+    EthernetHeader *new_ethernet_header = reinterpret_cast<EthernetHeader *>(reinterpret_cast<char *>(ethernet_header) + sizeof(VLAN8021QHeader));
+    MACAddress dst_mac = ethernet_header->dst_mac;
+    MACAddress src_mac = ethernet_header->src_mac;
+    new_ethernet_header->dst_mac = dst_mac;
+    new_ethernet_header->src_mac = src_mac;
+    *new_packet_size = total_packet_size - sizeof(VLAN8021QHeader);
+    return new_ethernet_header;
 }

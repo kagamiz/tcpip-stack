@@ -8,6 +8,7 @@ OBJS=graph.o \
 	 color.o \
 	 nwcli.o \
 	 comm.o \
+	 packet_dump.o \
 	 Layer2/layer2.o \
 	 Layer2/l2switch.o
 
@@ -34,6 +35,9 @@ nwcli.o:nwcli.cpp
 
 comm.o:comm.cpp
 	${CXX} ${CFLAGS} -c -I . -o comm.o comm.cpp
+
+packet_dump.o:packet_dump.cpp
+	${CXX} ${CFLAGS} -c -I . -o packet_dump.o packet_dump.cpp
 
 Layer2/layer2.o:Layer2/layer2.cpp
 	${CXX} ${CFLAGS} -c -I . Layer2/layer2.cpp -o Layer2/layer2.o
