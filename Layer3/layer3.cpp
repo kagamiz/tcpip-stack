@@ -13,6 +13,26 @@
 
 #include "../color.hpp"
 
+IPHeader::IPHeader() :
+    version(4),
+    ihl(5),
+    tos(0),
+    total_length(0), // to be filled by the caller
+    // fragmentation related field is currently not used in our implementation
+    identification(0),
+    unused_flag(0),
+    DF_flag(1),
+    MORE_flag(0),
+    frag_offset(0),
+    ttl(64),
+    protocol(0), // to be filled by the caller
+    checksum(0), // currently not used
+    src_ip(0), // to be filled by the caller
+    dst_ip(0) // to be filled by the caller
+{
+
+}
+
 L3Route::L3Route() :
     dest(0),
     mask(0),
