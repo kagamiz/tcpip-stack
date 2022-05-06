@@ -136,8 +136,14 @@ static inline bool l2FrameRecvQualifyOnInterfaceAccessMode(Interface *intf, Ethe
         return false;
     }
 
+    uint32_t intf_vlan_id = intf->getVLANID();
+    // interface must have an interface ID when operating on ACCESS mode.
+    if (!intf_vlan_id) {
+        return false;
+    }
+
     // untagged packet has arrived. set VLAN ID to ID which access mode node carries.
-    *output_vlan_id = intf->getVLANID();
+    *output_vlan_id = intf_vlan_id;
     return true;
 }
 

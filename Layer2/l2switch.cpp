@@ -126,6 +126,10 @@ void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t p
     switch (intf->getL2Mode()) {
     case InterfaceNetworkProperty::L2Mode::ACCESS:
     {
+        if (!intf->getVLANID()) {
+            std::cout << "Error : interface on L2 Access mode need to operate in a VLAN, but VLAN ID is not assigned." << std::endl;
+            assert(false);
+        }
         if (vlan_id != intf->getVLANID()) {
             break;
         }
