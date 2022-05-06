@@ -82,11 +82,11 @@ void dumpARPPacket(ARPHeader *arp_header, uint32_t packet_size)
     std::cout << "ARP header :" << std::endl;
     std::cout << " * hw_type                 : " << arp_header->hw_type << std::endl;
     std::cout << " * proto_type              : " << arp_header->proto_type << std::endl;
-    std::cout << " * hw_addr_len             : " << arp_header->hw_addr_len << std::endl;
-    std::cout << " * proto_addr_len          : " << arp_header->proto_addr_len << std::endl;
+    std::cout << " * hw_addr_len             : " << (int)arp_header->hw_addr_len << std::endl;
+    std::cout << " * proto_addr_len          : " << (int)arp_header->proto_addr_len << std::endl;
     std::cout << " * op_code                 : " << arp_header->op_code << " " << (arp_header->op_code == ARP_BROAD_REQ ? "(ARP Broadcast MSG)" : "(ARP Reply)") << std::endl;
     std::cout << " * Source MAC Address      : " << static_cast<std::string>(arp_header->src_mac) << std::endl;
     std::cout << " * Source IP Address       : " << static_cast<std::string>(IPAddress(arp_header->src_ip)) << std::endl;
-    std::cout << " * Destination MAC Address : " << static_cast<std::string>(arp_header->src_mac) << std::endl;
-    std::cout << " * Destination IP Address  : " << static_cast<std::string>(IPAddress(arp_header->src_ip)) << std::endl;
+    std::cout << " * Destination MAC Address : " << static_cast<std::string>(arp_header->dst_mac) << std::endl;
+    std::cout << " * Destination IP Address  : " << static_cast<std::string>(IPAddress(arp_header->dst_ip)) << std::endl;
 }

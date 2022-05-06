@@ -200,7 +200,7 @@ static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *e
 
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr)
 {
-    EthernetHeader *ethenet_header = (EthernetHeader *)(new char[ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader)]);
+    EthernetHeader *ethenet_header = (EthernetHeader *)(new char[MAX_PACKET_BUFFER_SIZE]);
 
     if (!oif) {
         oif = node->getMatchingSubnetInterface(IPAddress(ip_addr));
@@ -236,7 +236,9 @@ void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_a
     ETH_FCS(ethenet_header, sizeof(ARPHeader)) = 0; // unused
 
     /* STEP 3 : Now dispatch the ARP Broadcast Request Packet out of interface */
-    oif->sendPacketOut(reinterpret_cast<char *>(ethenet_header), ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader));
+    uint32_t total_packet_size = ETH_HDR_SIZE_EXCL_PAYLOAD + sizeof(ARPHeader);
+    char *shifted_packet_buffer = packetBufferShiftRight(reinterpret_cast<char *>(ethenet_header), total_packet_size, MAX_PACKET_BUFFER_SIZE);
+    oif->sendPacketOut(reinterpret_cast<char *>(shifted_packet_buffer), total_packet_size);
 
     delete[] ethenet_header;
 }

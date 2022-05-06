@@ -104,6 +104,8 @@ void deleteMACTable(MACTable *mac_table)
     delete mac_table;
 }
 
+extern void dumpPacket(EthernetHeader *ethernet_header, uint32_t packet_size);
+
 void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t packet_size)
 {
     if (intf->isL3Mode()) {
@@ -117,6 +119,10 @@ void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t p
         vlan_id = p->getVLANID();
     }
 
+    char *packet_tmp = new char[packet_size];
+    char *packet_tmp_header = packet_tmp;
+    memcpy(packet_tmp, packet, packet_size);
+
     switch (intf->getL2Mode()) {
     case InterfaceNetworkProperty::L2Mode::ACCESS:
     {
@@ -125,10 +131,10 @@ void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t p
         }
         if (vlan_id) {
             uint32_t new_packet_size = 0;
-            ethernet_header = untagPacketWithVLANID(ethernet_header, packet_size, &new_packet_size);
+            packet_tmp = reinterpret_cast<char *>(untagPacketWithVLANID(reinterpret_cast<EthernetHeader *>(packet_tmp), packet_size, &new_packet_size));
             packet_size = new_packet_size;
         }
-        intf->sendPacketOut(reinterpret_cast<char *>(ethernet_header), packet_size);
+        intf->sendPacketOut(packet_tmp, packet_size);
         break;
     }
     case InterfaceNetworkProperty::L2Mode::TRUNK:
@@ -136,10 +142,16 @@ void l2SwitchSendPacketOut(Node *node, Interface *intf, char *packet, uint32_t p
         if (!intf->isVLANMember(vlan_id)) {
             break;
         }
-        intf->sendPacketOut(reinterpret_cast<char *>(ethernet_header), packet_size);
+        intf->sendPacketOut(packet_tmp, packet_size);
+        break;
+    }
+    default:
+    {
         break;
     }
     }
+
+    delete[] packet_tmp_header;
 }
 
 static void l2SwitchForwardFrame(Node *node, Interface *recv_intf, char *packet, uint32_t packet_size)

@@ -7,6 +7,7 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -182,13 +183,13 @@ void InterfaceNetworkProperty::addVLANMemberships(uint32_t vlan_id)
     return;
 }
 
-const uint32_t &InterfaceNetworkProperty::getVLANID() const
+const uint32_t InterfaceNetworkProperty::getVLANID() const
 {
     if (l2mode != InterfaceNetworkProperty::L2Mode::ACCESS) {
         std::cout << "Error : " << __FUNCTION__ << " is not supposed to be called on L2 Mode " << getL2ModeStr() << std::endl;
-        return 0;
+        assert(false);
     }
-    return *std::begin(vlans);
+    return vlans.front();
 }
 
 void InterfaceNetworkProperty::dump() const

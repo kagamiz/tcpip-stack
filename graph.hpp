@@ -189,7 +189,7 @@ public:
         return intf_network_property.isVLANMember(vlan_id);
     }
 
-    const uint32_t &getVLANID() const
+    const uint32_t getVLANID() const
     {
         return intf_network_property.getVLANID();
     }

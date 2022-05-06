@@ -135,7 +135,7 @@ Graph *build_simple_l2_switch_topo()
                                   +-----+----+                                +-----+---+
                                   |          |                                |         |
    +------+---+                   |          |                                |         |                         +--------+
-   |  H1      |10.1.1.1/24        |   L2SW1  |eth0/5                    eth0/7| L2SW2   |eth0/10           eth0/11|  H6    |
+   |  H1      |10.1.1.1/24        |   L2SW1  |eth0/5                   eth0/14| L2SW2   |eth0/10           eth0/11|  H6    |
    |122.1.1.1 +-------------------|          |+-------------------------------|         +-------------+----------+122.1.1.6|
    +------+---+ eth0/1      eth0/2|          |TR,V10,V11            TR,V10,V11|         |AC,V10        10.1.1.6/24|        |
                             AC,V10|          |                                |         |                         +-+------+
@@ -145,7 +145,7 @@ Graph *build_simple_l2_switch_topo()
                                         |                                          |
                                         |                                          |
                                         |                                          |
-                                        |                                          |eth0/11
+                                        |                                          |eth0/13
                                         |eth0/4                                    |10.1.1.4/24
                                         |10.1.1.3/24                             +--+-----+
                                    +----+---+|                                   | H4     |
@@ -177,15 +177,15 @@ Graph *build_dualswitch_topo()
     topo->insertLinkBetweenTwoNodes(H1, L2SW1, "eth0/1", "eth0/2", 1);
     topo->insertLinkBetweenTwoNodes(H2, L2SW1, "eth0/3", "eth0/7", 1);
     topo->insertLinkBetweenTwoNodes(H3, L2SW1, "eth0/4", "eth0/6", 1);
-    topo->insertLinkBetweenTwoNodes(L2SW1, L2SW2, "eth0/5", "eth0/7", 1);
+    topo->insertLinkBetweenTwoNodes(L2SW1, L2SW2, "eth0/5", "eth0/14", 1);
     topo->insertLinkBetweenTwoNodes(H5, L2SW2, "eth0/8", "eth0/9", 1);
-    topo->insertLinkBetweenTwoNodes(H4, L2SW2, "eth0/11", "eth0/12", 1);
+    topo->insertLinkBetweenTwoNodes(H4, L2SW2, "eth0/13", "eth0/12", 1);
     topo->insertLinkBetweenTwoNodes(H6, L2SW2, "eth0/11", "eth0/10", 1);
 
     H1->setInterfaceIPAddress("eth0/1", "10.1.1.1", 24);
     H2->setInterfaceIPAddress("eth0/3", "10.1.1.2", 24);
     H3->setInterfaceIPAddress("eth0/4", "10.1.1.3", 24);
-    H4->setInterfaceIPAddress("eth0/11", "10.1.1.4", 24);
+    H4->setInterfaceIPAddress("eth0/13", "10.1.1.4", 24);
     H5->setInterfaceIPAddress("eth0/8", "10.1.1.5", 24);
     H6->setInterfaceIPAddress("eth0/11", "10.1.1.6", 24);
 
@@ -199,9 +199,9 @@ Graph *build_dualswitch_topo()
     nodeSetInterfaceL2Mode(L2SW1, "eth0/6", InterfaceNetworkProperty::L2Mode::ACCESS);
     nodeSetInterfaceVLANMembership(L2SW1, "eth0/6", 11);
 
-    nodeSetInterfaceL2Mode(L2SW2, "eth0/7", InterfaceNetworkProperty::L2Mode::TRUNK);
-    nodeSetInterfaceVLANMembership(L2SW2, "eth0/7", 10);
-    nodeSetInterfaceVLANMembership(L2SW2, "eth0/7", 11);
+    nodeSetInterfaceL2Mode(L2SW2, "eth0/14", InterfaceNetworkProperty::L2Mode::TRUNK);
+    nodeSetInterfaceVLANMembership(L2SW2, "eth0/14", 10);
+    nodeSetInterfaceVLANMembership(L2SW2, "eth0/14", 11);
     nodeSetInterfaceL2Mode(L2SW2, "eth0/9", InterfaceNetworkProperty::L2Mode::ACCESS);
     nodeSetInterfaceVLANMembership(L2SW2, "eth0/9", 10);
     nodeSetInterfaceL2Mode(L2SW2, "eth0/10", InterfaceNetworkProperty::L2Mode::ACCESS);

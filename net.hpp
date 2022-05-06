@@ -323,7 +323,7 @@ public:
 
     void addVLANMemberships(uint32_t vlan_id);
 
-    const uint32_t &getVLANID() const;
+    const uint32_t getVLANID() const;
 
     /**
      * @brief outputs a detail of this interface property on the standard output
