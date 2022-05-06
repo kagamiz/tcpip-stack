@@ -19,11 +19,16 @@ void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const
     if (!intf) {
         return;
     }
-    if (intf->isL3Mode()) {
-        std::cout << "Error : interface " << interface_name << " is working as L3 Mode. Please unset the IP address to change the L2 mode." << std::endl;
+    intf->setL2Mode(mode);
+}
+
+void nodeSetInterfaceVLAN(Node *node, const std::string &interface_name, uint32_t vlan_id)
+{
+    Interface *intf = node->getNodeInterfaceByName(interface_name);
+    if (!intf) {
         return;
     }
-    intf->setL2Mode(mode);
+    intf->setVLANMemberships(vlan_id);
 }
 
 MACTableEntry::MACTableEntry() :

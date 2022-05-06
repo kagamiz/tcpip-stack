@@ -312,6 +312,16 @@ public:
         l2mode = mode;
     }
 
+    void resetVLANSetting();
+
+    bool isVLANMember(uint32_t vlan_id) const;
+
+    bool isVLANOccupied() const;
+
+    void updateVLANMemberShips(uint32_t vlan_id);
+
+    void addVLANMemberships(uint32_t vlan_id);
+
     /**
      * @brief outputs a detail of this interface property on the standard output
      *
@@ -326,8 +336,10 @@ private:
     };
 
     /* L2 properties */
+    inline static constexpr uint32_t MAX_VLAN_MEMBERSHIP = 10;
     MACAddress mac_addr; // hard burnt in interface NIC
     L2Mode l2mode;
+    std::array<uint16_t, MAX_VLAN_MEMBERSHIP> vlans;
 
     /* L3 properties */
     bool is_ip_addr_configured; /* set to true if IP address is configured

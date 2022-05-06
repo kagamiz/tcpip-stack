@@ -180,10 +180,9 @@ public:
         return intf_network_property.getL2Mode();
     }
 
-    void setL2Mode(const InterfaceNetworkProperty::L2Mode &mode)
-    {
-        intf_network_property.setL2Mode(mode);
-    }
+    void setL2Mode(const InterfaceNetworkProperty::L2Mode &mode);
+
+    void setVLANMemberships(uint32_t vlan_id);
 
     /**
      * @brief outputs a detail of this interface on the standard output.

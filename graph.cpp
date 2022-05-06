@@ -126,6 +126,62 @@ int Interface::receivePacket(char *packet, uint32_t packet_size)
     return 0;
 }
 
+void Interface::setL2Mode(const InterfaceNetworkProperty::L2Mode &mode)
+{
+    // when mode is set to undesired value, then we will cast early return.
+    if (mode != InterfaceNetworkProperty::L2Mode::ACCESS &&
+        mode != InterfaceNetworkProperty::L2Mode::TRUNK) {
+        std::cout << "Error : invalid value tried to be set as L2 Mode." << std::endl;
+        return;
+    }
+
+    const InterfaceNetworkProperty::L2Mode old_l2_mode = intf_network_property.getL2Mode();
+
+    // in all other cases, we accepts new L2 Mode.
+    intf_network_property.setL2Mode(mode);
+
+    // do other necessary settings.
+
+    // 1. when the node was working as L3 Mode, then unset the IP address.
+    if (isL3Mode()) {
+        intf_network_property.unsetIPAddress();
+        return;
+    }
+
+    // 2. when the old l2 setting of the node was TRUNK mode, and the new setting is ACCESS mode, then
+    // reset all of the VLAN setting.
+    if (old_l2_mode == InterfaceNetworkProperty::L2Mode::TRUNK &&
+        mode == InterfaceNetworkProperty::L2Mode::ACCESS) {
+        intf_network_property.resetVLANSetting();
+        return;
+    }
+
+}
+
+void Interface::setVLANMemberships(uint32_t vlan_id)
+{
+    if (intf_network_property.isL3Mode()) {
+        std::cout << "Error : Interface " << if_name << " : L3 mode enabled" << std::endl;
+    }
+
+    switch (intf_network_property.getL2Mode()) {
+    case InterfaceNetworkProperty::L2Mode::ACCESS:
+    {
+        intf_network_property.updateVLANMemberShips(vlan_id);
+    }
+    case InterfaceNetworkProperty::L2Mode::TRUNK:
+    {
+        intf_network_property.addVLANMemberships(vlan_id);
+    }
+    default:
+    {
+        std::cout << "Error : Interface " << if_name << " : L2 mode not enabled" << std::endl;
+        break;
+    }
+    }
+    return;
+}
+
 void Interface::dump() const
 {
     std::cout

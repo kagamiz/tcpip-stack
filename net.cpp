@@ -1,11 +1,12 @@
 /**
- * @file net.hpp
+ * @file net.cpp
  * @author Jayson Sho Toma
  * @brief stores data structures and API for configuring network
  * @version 0.1
  * @date 2022-05-03
  */
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -121,7 +122,59 @@ InterfaceNetworkProperty::InterfaceNetworkProperty() :
     ip_addr("0.0.0.0"),
     mask(0)
 {
+    std::fill(std::begin(vlans), std::end(vlans), 0);
+}
 
+void InterfaceNetworkProperty::resetVLANSetting()
+{
+    std::fill(std::begin(vlans), std::end(vlans), 0);
+}
+
+bool InterfaceNetworkProperty::isVLANMember(uint32_t vlan_id) const
+{
+    auto result = std::find_if(
+        std::begin(vlans),
+        std::end(vlans),
+        [&](const uint32_t &vlan_member_id) {
+            return vlan_id == vlan_member_id;
+        }
+    );
+    return result != std::end(vlans);
+}
+
+bool InterfaceNetworkProperty::isVLANOccupied() const
+{
+    auto result = std::find_if(
+        std::begin(vlans),
+        std::end(vlans),
+        [](const uint32_t &vlan_member_id) {
+            return vlan_member_id == 0;
+        }
+    );
+    return result != std::end(vlans);
+}
+
+void InterfaceNetworkProperty::updateVLANMemberShips(uint32_t vlan_id)
+{
+    *(std::begin(vlans)) = vlan_id;
+}
+
+void InterfaceNetworkProperty::addVLANMemberships(uint32_t vlan_id)
+{
+    if (isVLANMember(vlan_id)) {
+        return;
+    }
+
+    for (auto &vlan_member : vlans) {
+        if (vlan_member != 0) {
+            continue;
+        }
+        vlan_member = vlan_id;
+        return;
+    }
+
+    std::cout << "Error : cannot enroll id " << vlan_id << " as a VLAN member : memberships already occupied" << std::endl;
+    return;
 }
 
 void InterfaceNetworkProperty::dump() const
@@ -137,6 +190,16 @@ void InterfaceNetworkProperty::dump() const
         << "L2 Mode : "
         << getL2ModeStr()
         << std::endl;
+
+    if (l2mode == L2Mode::ACCESS || l2mode == L2Mode::TRUNK) {
+        std::cout << "  VLAN ID(s) :" << std::endl;
+        for (const auto &vlan_id : vlans) {
+            if (vlan_id == 0) {
+                continue;
+            }
+            std::cout << "   * " << vlan_id << std::endl;
+        }
+    }
 }
 
 char *packetBufferShiftRight(char *packet, uint32_t packet_size, uint32_t total_buffer_size)
