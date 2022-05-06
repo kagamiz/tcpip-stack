@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -17,6 +18,7 @@
  // forward declaration
 class ARPTable;
 class MACTable;
+class RoutingTable;
 
 /**
  * @class IPAddress
@@ -198,6 +200,7 @@ private:
     MACTable *mac_table;
 
     /* L3 properties */
+    RoutingTable *routing_table;
     bool is_loopback_addr_configured;
     IPAddress loopback_addr;
 };

@@ -21,6 +21,9 @@ extern void deleteARPTable(ARPTable *arp_table);
 extern MACTable *getNewMACTable();
 extern void deleteMACTable(MACTable *mac_table);
 
+extern RoutingTable *getNewRoutingTable();
+extern void deleteRoutingTable(RoutingTable *routing_table);
+
 MACAddress::MACAddress() :
     mac{ 0 }
 {
@@ -89,6 +92,7 @@ IPAddress IPAddress::applyMask(char mask_size) const
 NodeNetworkProperty::NodeNetworkProperty() :
     arp_table(getNewARPTable()),
     mac_table(getNewMACTable()),
+    routing_table(getNewRoutingTable()),
     is_loopback_addr_configured(false),
     loopback_addr("0.0.0.0")
 {
@@ -105,6 +109,11 @@ NodeNetworkProperty::~NodeNetworkProperty()
         deleteMACTable(mac_table);
     }
     mac_table = nullptr;
+
+    if (routing_table) {
+        deleteRoutingTable(routing_table);
+    }
+    routing_table = nullptr;
 }
 
 void NodeNetworkProperty::dump() const
