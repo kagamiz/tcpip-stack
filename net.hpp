@@ -274,6 +274,7 @@ public:
         mask = subnet_mask;
         is_ip_addr_configured = true;
         l2mode = L2Mode::L2_MODE_UNKOWN;
+        resetVLANSetting();
     }
 
     /**
