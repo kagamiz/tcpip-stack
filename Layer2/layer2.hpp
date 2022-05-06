@@ -182,3 +182,6 @@ static inline uint32_t getEthernetHeaderSizeExcludingPayload(EthernetHeader *eth
     }
     return ETH_HDR_SIZE_EXCL_PAYLOAD;
 }
+
+VLANEthernetHeader *tagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, int32_t vlan_id, uint32_t *new_packet_size);
+EthernetHeader *untagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, uint32_t *new_packet_size);

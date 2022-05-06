@@ -253,3 +253,44 @@ static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeade
     }
     sendARPReplyMessage(ethernet_header, iif);
 }
+
+/* VLAN APIs */
+VLANEthernetHeader *tagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, int32_t vlan_id, uint32_t *new_packet_size)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); p) {
+        VLANEthernetHeader *vlan_ethernet_header = reinterpret_cast<VLANEthernetHeader *>(ethernet_header);
+        vlan_ethernet_header->vlan_8021q_header.tci_vid = vlan_id;
+        *new_packet_size = total_packet_size;
+        return vlan_ethernet_header;
+    }
+    char *head_position = reinterpret_cast<char *>(ethernet_header) - sizeof(VLAN8021QHeader);
+    char *iterator = head_position;
+    // dst_mac
+    memmove(iterator, &ethernet_header->dst_mac, sizeof(MACAddress));
+    iterator += sizeof(MACAddress);
+    // src_mac
+    memmove(iterator, &ethernet_header->src_mac, sizeof(MACAddress));
+    iterator += sizeof(MACAddress);
+    VLAN8021QHeader *vlan_8021q_header = reinterpret_cast<VLAN8021QHeader *>(iterator);
+    vlan_8021q_header->tpid = 0x8100;
+    vlan_8021q_header->tci_dei = 0;
+    vlan_8021q_header->tci_pcp = 0;
+    vlan_8021q_header->tci_vid = vlan_id;
+    *new_packet_size = total_packet_size + sizeof(VLAN8021QHeader);
+    return reinterpret_cast<VLANEthernetHeader *>(head_position);
+}
+
+EthernetHeader *untagPacketWithVLANID(EthernetHeader *ethernet_header, uint32_t total_packet_size, uint32_t *new_packet_size)
+{
+    if (VLAN8021QHeader *p = isPacketVLANTagged(ethernet_header); !p) {
+        *new_packet_size = total_packet_size;
+        return ethernet_header;
+    }
+    EthernetHeader *new_ethernet_header = reinterpret_cast<EthernetHeader *>(reinterpret_cast<char *>(ethernet_header) + sizeof(VLAN8021QHeader));
+    MACAddress dst_mac = ethernet_header->dst_mac;
+    MACAddress src_mac = ethernet_header->src_mac;
+    new_ethernet_header->dst_mac = dst_mac;
+    new_ethernet_header->src_mac = src_mac;
+    *new_packet_size = total_packet_size - sizeof(VLAN8021QHeader);
+    return new_ethernet_header;
+}

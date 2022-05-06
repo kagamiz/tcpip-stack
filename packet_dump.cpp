@@ -66,6 +66,11 @@ void dumpPacket(EthernetHeader *ethernet_header, uint32_t packet_size)
         break;
     }
     */
+    default:
+    {
+        std::cout << " * Payload Size            : " << packet_size - getEthernetHeaderSizeExcludingPayload(ethernet_header) << std::endl;
+        break;
+    }
     }
 
     std::cout << "===  end  of " << __FUNCTION__ << " ===" << std::endl;
