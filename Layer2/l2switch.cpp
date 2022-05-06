@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <iostream>
 
- /* L2 Switching APIs */
 void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const InterfaceNetworkProperty::L2Mode &mode)
 {
     Interface *intf = node->getNodeInterfaceByName(interface_name);
@@ -22,7 +21,7 @@ void nodeSetInterfaceL2Mode(Node *node, const std::string &interface_name, const
     intf->setL2Mode(mode);
 }
 
-void nodeSetInterfaceVLAN(Node *node, const std::string &interface_name, uint32_t vlan_id)
+void nodeSetInterfaceVLANMembership(Node *node, const std::string &interface_name, uint32_t vlan_id)
 {
     Interface *intf = node->getNodeInterfaceByName(interface_name);
     if (!intf) {

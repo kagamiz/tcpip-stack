@@ -168,10 +168,12 @@ void Interface::setVLANMemberships(uint32_t vlan_id)
     case InterfaceNetworkProperty::L2Mode::ACCESS:
     {
         intf_network_property.updateVLANMemberShips(vlan_id);
+        break;
     }
     case InterfaceNetworkProperty::L2Mode::TRUNK:
     {
         intf_network_property.addVLANMemberships(vlan_id);
+        break;
     }
     default:
     {
