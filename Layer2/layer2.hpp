@@ -250,3 +250,8 @@ private:
 ARPTable *getNewARPTable();
 void deleteARPTable(ARPTable *arp_table);
 void sendARPBroadcastRequest(Node *node, Interface *oif, const std::string &ip_addr);
+
+// L2 <-> L3 interaction
+
+void promotePacketToLayer2(Node *node, Interface *interface, char *packet, uint32_t packet_size);
+void demotePacketToLayer2(Node *node, const IPAddress &nexthop_ip, const Interface *oif, char *packet, uint32_t packet_size, int protocol_number);

@@ -12,6 +12,7 @@ OBJS=graph.o \
 	 Layer2/layer2.o \
 	 Layer2/l2switch.o \
 	 Layer3/layer3.o \
+	 Layer5/layer5.o \
 	 Layer5/ping.o
 
 test.out:testapp.o ${OBJS} CommandParser/libcli.a
@@ -49,6 +50,9 @@ Layer2/l2switch.o:Layer2/l2switch.cpp
 
 Layer3/layer3.o:Layer3/layer3.cpp
 	${CXX} ${CFLAGS} -c -I . Layer3/layer3.cpp -o Layer3/layer3.o
+
+Layer5/ping.o:Layer5/layer5.cpp
+	${CXX} ${CFLAGS} -c -I . Layer5/layer5.cpp -o Layer5/layer5.o
 
 Layer5/ping.o:Layer5/ping.cpp
 	${CXX} ${CFLAGS} -c -I . Layer5/ping.cpp -o Layer5/ping.o

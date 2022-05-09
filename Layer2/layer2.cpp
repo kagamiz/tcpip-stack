@@ -23,7 +23,7 @@ extern void l2SwitchRecvFrame(Interface *interface, char *packet, uint32_t packe
 static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *ethernet_header);
 static void processARPBroadcastRequest(Node *node, Interface *iif, EthernetHeader *ethernet_header);
 
-static void promotePacketToLayer2(Node *node, Interface *interface, char *packet, uint32_t packet_size)
+void promotePacketToLayer2(Node *node, Interface *interface, char *packet, uint32_t packet_size)
 {
     EthernetHeader *ethernet_header = reinterpret_cast<EthernetHeader *>(packet);
     switch (ethernet_header->type) {
@@ -47,6 +47,11 @@ static void promotePacketToLayer2(Node *node, Interface *interface, char *packet
         // promotePacketToLayer3(node, interface, packet, packet_size);
         break;
     }
+}
+
+void demotePacketToLayer2(Node *node, const IPAddress *nexthop_ip, const Interface &oif, char *packet, uint32_t packet_size, int protocol_number)
+{
+
 }
 
 void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size)

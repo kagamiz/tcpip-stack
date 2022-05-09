@@ -11,6 +11,7 @@
 #include <list>
 #include <string>
 
+#include "../graph.hpp"
 #include "../net.hpp"
 #include "../printer.hpp"
 
@@ -87,3 +88,8 @@ RoutingTable *getNewRoutingTable();
 void deleteRoutingTable(RoutingTable *routing_table);
 
 void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
+
+// L2 <-> L3 interaction
+
+void promotePacketToLayer3(Node *node, Interface *recv_intf, char *payload, uint32_t app_data_size, int l3_protocol_number);
+void demotePacketToLayer3(Node *node, char *packet, uint32_t packet_size, int protocol_number, const IPAddress &dest_ip_address);

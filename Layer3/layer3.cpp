@@ -137,3 +137,31 @@ void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::s
 {
     routing_table->addDirectRoute(IPAddress(ip_addr), mask);
 }
+
+/**
+ * @brief A public API to be used by L2 or othe lower layers to promote packets to layer3 in the TCP/IP stack
+ *
+ * @param node
+ * @param recv_intf
+ * @param payload
+ * @param app_data_size
+ * @param l3_protocol_number // obtained from "type" field of the EthernetHeader
+ */
+void promotePacketToLayer3(Node *node, Interface *recv_intf, char *payload, uint32_t app_data_size, int l3_protocol_number)
+{
+
+}
+
+/**
+ * @brief An API to be used by L4 or L5 to push the packet down to the TCP/IP stack L3.
+ *
+ * @param node
+ * @param packet
+ * @param packet_size
+ * @param protocol_number   // L4 or L5 protocol type
+ * @param dest_ip_address
+ */
+void demotePacketToLayer3(Node *node, char *packet, uint32_t packet_size, int protocol_number, const IPAddress &dest_ip_address)
+{
+
+}
