@@ -237,7 +237,7 @@ public:
     }
 
     bool addEntry(ARPEntry *arp_entry);
-    ARPEntry *arpTableLookup(const std::string &ip_addr);
+    const ARPEntry *lookup(const std::string &ip_addr) const;
     void updateFromARPReply(ARPHeader *arp_header, Interface *iif);
     void deleteEntry(const std::string &ip_addr);
 

@@ -12,6 +12,10 @@
 #include <iostream>
 
 #include "../color.hpp"
+#include "../comm.hpp"
+#include "../tcpconst.hpp"
+
+extern void demotePacketToLayer2(Node *node, const IPAddress &nexthop_ip, const Interface *oif, char *packet, uint32_t packet_size, int protocol_number);
 
 IPHeader::IPHeader() :
     version(4),
@@ -64,6 +68,9 @@ void RoutingTable::addRoute(const IPAddress &dst, char mask, const std::string &
     L3Route route(dst_subnet, mask, gateway.empty(), IPAddress(gateway), oif);
 
     if (const L3Route *old_route = lookup(dst_subnet, mask); old_route) {
+        if (route == *old_route) {
+            return;
+        }
         deleteEntry(old_route->dest, old_route->mask);
     }
 
@@ -138,6 +145,86 @@ void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::s
     routing_table->addDirectRoute(IPAddress(ip_addr), mask);
 }
 
+void deleteEntryFromRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask)
+{
+    routing_table->deleteEntry(IPAddress(ip_addr), mask);
+}
+
+bool isLayer3LocalDelivery(Node *node, const IPAddress &dest_ip)
+{
+    if (node->isLoopbackAddressConfigured() && node->getLoopbackAddress() == dest_ip) {
+        return true;
+    }
+
+    return node->getNodeInterfaceByIPAddress(dest_ip);
+}
+
+static void layer3IPPacketRecvFromLayer2(Node *node, Interface *interface, IPHeader *ip_header, uint32_t packet_size)
+{
+    IPAddress dest_ip = ip_header->dst_ip;
+    const L3Route *l3_route = node->getRoutingTable()->lookupLPM(dest_ip);
+
+    if (!l3_route) {
+        std::cout << "Router " << node->getName() << " : Cannot Route IP : " << getColoredString(static_cast<std::string>(dest_ip), "Light Red") << std::endl;
+        return;
+    }
+
+    // router accepts the IP header
+
+    if (l3_route->is_direct) {
+        if (isLayer3LocalDelivery(node, dest_ip)) {
+            // local delivery case
+            switch (ip_header->protocol) {
+            case ICMP_PRO:
+                std::cout << "IP Address : " << getColoredString(static_cast<std::string>(dest_ip), "Light Red") << ", ping success" << std::endl;
+                break;
+            default:
+                break;
+            }
+        }
+        else {
+            // direct host delivery case
+            demotePacketToLayer2(node, IPAddress(0), nullptr, reinterpret_cast<char *>(ip_header), packet_size, ETH_IP);
+        }
+    }
+    else {
+        // L3 forwarding case
+        ip_header->ttl--;
+
+        // drop the packet
+        if (ip_header->ttl == 0) {
+            return;
+        }
+
+        Interface *oif = node->getNodeInterfaceByName(l3_route->oif);
+        demotePacketToLayer2(
+            node,
+            l3_route->gateway_ip,
+            oif,
+            reinterpret_cast<char *>(ip_header),
+            packet_size,
+            ETH_IP
+        );
+    }
+}
+
+static void layer3PacketRecvFromLayer2(Node *node, Interface *interface, char *packet, uint32_t packet_size, int l3_protocol_number)
+{
+    switch (l3_protocol_number) {
+    case ETH_IP:
+    {
+        layer3IPPacketRecvFromLayer2(node, interface, reinterpret_cast<IPHeader *>(packet), packet_size);
+        break;
+    }
+    // TBD
+    // case ETH_IPv6:
+    // ...
+    //
+    default:
+        break;
+    }
+}
+
 /**
  * @brief A public API to be used by L2 or othe lower layers to promote packets to layer3 in the TCP/IP stack
  *
@@ -149,7 +236,37 @@ void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::s
  */
 void promotePacketToLayer3(Node *node, Interface *recv_intf, char *payload, uint32_t app_data_size, int l3_protocol_number)
 {
+    layer3PacketRecvFromLayer2(node, recv_intf, payload, app_data_size, l3_protocol_number);
+}
 
+static void layer3RecvPacketFromTop(Node *node, char *packet, uint32_t packet_size, int protocol_number, const IPAddress &dest_ip_address)
+{
+    IPHeader ip_header;
+    ip_header.protocol = protocol_number;
+    ip_header.src_ip = node->getLoopbackAddress();
+    ip_header.dst_ip = dest_ip_address;
+    ip_header.total_length = ip_header.ihl * 4 + packet_size;
+
+    const L3Route *l3_route = node->getRoutingTable()->lookupLPM(dest_ip_address);
+    if (!l3_route) {
+        std::cout << "Node " << node->getName() << " : No L3 route for IP address " << getColoredString(static_cast<std::string>(dest_ip_address), "Light Red") << std::endl;
+        return;
+    }
+
+    char *new_packet = new char[MAX_PACKET_BUFFER_SIZE];
+    memcpy(new_packet, reinterpret_cast<char *>(&ip_header), ip_header.ihl * 4);
+    if (packet && packet_size) {
+        memcpy(new_packet + ip_header.ihl * 4, packet, packet_size);
+    }
+
+    IPAddress next_hop_ip = (l3_route->is_direct ? dest_ip_address : l3_route->gateway_ip);
+    uint32_t new_packet_size = packet_size + ip_header.ihl * 4;
+    char *shifted_packet_buffer = packetBufferShiftRight(new_packet, packet_size + new_packet_size, MAX_PACKET_BUFFER_SIZE);
+
+    Interface *oif = (l3_route->is_direct ? nullptr : node->getNodeInterfaceByName(l3_route->oif));
+    demotePacketToLayer2(node, next_hop_ip, oif, shifted_packet_buffer, new_packet_size, ETH_IP);
+
+    delete[] new_packet;
 }
 
 /**
@@ -163,5 +280,5 @@ void promotePacketToLayer3(Node *node, Interface *recv_intf, char *payload, uint
  */
 void demotePacketToLayer3(Node *node, char *packet, uint32_t packet_size, int protocol_number, const IPAddress &dest_ip_address)
 {
-
+    layer3RecvPacketFromTop(node, packet, packet_size, protocol_number, dest_ip_address);
 }

@@ -156,6 +156,11 @@ public:
 
     ~NodeNetworkProperty();
 
+    bool isLoopbackAddressConfigured() const
+    {
+        return is_loopback_addr_configured;
+    }
+
     /**
      * @brief Get the Loopback Address object
      *

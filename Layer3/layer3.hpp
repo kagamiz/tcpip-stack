@@ -88,6 +88,7 @@ RoutingTable *getNewRoutingTable();
 void deleteRoutingTable(RoutingTable *routing_table);
 
 void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
+void deleteEntryFromRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
 
 // L2 <-> L3 interaction
 

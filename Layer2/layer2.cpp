@@ -18,6 +18,8 @@
  /* extern function prototype declaration */
 
 extern void l2SwitchRecvFrame(Interface *interface, char *packet, uint32_t packet_size);
+extern void promotePacketToLayer3(Node *node, Interface *recv_intf, char *payload, uint32_t app_data_size, int l3_protocol_number);
+extern bool isLayer3LocalDelivery(Node *node, const IPAddress &dest_ip);
 
 /* function prototype declaration */
 static void processARPReplyMessage(Node *node, Interface *iif, EthernetHeader *ethernet_header);
@@ -41,19 +43,64 @@ void promotePacketToLayer2(Node *node, Interface *interface, char *packet, uint3
             break;
         }
     }
-    break;
+    case ETH_IP:
+    {
+        promotePacketToLayer3(node, interface, reinterpret_cast<char *>(getEthernetHeaderPayload(ethernet_header)), packet_size - getEthernetHeaderSizeExcludingPayload(ethernet_header), ethernet_header->type);
+        break;
+    }
 
     default:
-        // promotePacketToLayer3(node, interface, packet, packet_size);
         break;
     }
 }
 
-void demotePacketToLayer2(Node *node, const IPAddress *nexthop_ip, const Interface &oif, char *packet, uint32_t packet_size, int protocol_number)
+static void layer2ForwardIPPacket(Node *node, const IPAddress &nexthop_ip, const Interface *oif, EthernetHeader *ethernet_header, uint32_t packet_size)
 {
+    uint32_t payload_size = packet_size - getEthernetHeaderSizeExcludingPayload(ethernet_header);
+    if (isLayer3LocalDelivery(node, nexthop_ip)) {
+        promotePacketToLayer3(node, nullptr, reinterpret_cast<char *>(ethernet_header->payload), payload_size, ethernet_header->type);
+        return;
+    }
+    Interface *intf = const_cast<Interface *>(oif);
 
+    if (!intf) {
+        intf = node->getMatchingSubnetInterface(nexthop_ip);
+        if (!intf) {
+            std::cout << node->getName() << " : Error : local matching subnet for IP : " << getColoredString(nexthop_ip, "Light Red") << " could not be found" << std::endl;
+            return;
+        }
+    }
+
+    const ARPEntry *arp_entry = node->getARPTable()->lookup(nexthop_ip);
+    if (!arp_entry) {
+        // time for On demand ARP resolution, TBD...
+        // will be implemented later on
+        assert(false);
+        sendARPBroadcastRequest(node, intf, nexthop_ip);
+        return;
+    }
+
+    ethernet_header->src_mac = intf->getMACAddress();
+    ethernet_header->dst_mac = arp_entry->mac_addr;
+    setCommonEthernetFCS(ethernet_header, payload_size, 0);
+    intf->sendPacketOut(reinterpret_cast<char *>(ethernet_header), packet_size);
 }
 
+void demotePacketToLayer2(Node *node, const IPAddress &nexthop_ip, const Interface *oif, char *packet, uint32_t packet_size, int protocol_number)
+{
+    assert(packet_size < sizeof(EthernetHeader::payload));
+
+    EthernetHeader *ethernet_header = ALLOC_ETH_HEADER_WITH_PAYLOAD(packet, packet_size);
+
+    switch (protocol_number) {
+    case ETH_IP:
+        ethernet_header->type = ETH_IP;
+        layer2ForwardIPPacket(node, nexthop_ip, oif, ethernet_header, packet_size + getEthernetHeaderSizeExcludingPayload(ethernet_header));
+        break;
+    default:
+        break;
+    }
+}
 void layer2FrameRecv(Node *node, Interface *interface, char *packet, uint32_t packet_size)
 {
     /* Entry point into TCP/IP from bottom */
@@ -89,7 +136,7 @@ ARPEntry::ARPEntry() :
 
 }
 
-ARPEntry *ARPTable::arpTableLookup(const std::string &ip_addr)
+const ARPEntry *ARPTable::lookup(const std::string &ip_addr) const
 {
     auto result = std::find_if(
         std::begin(arp_table),
@@ -117,7 +164,7 @@ void ARPTable::deleteEntry(const std::string &ip_addr)
 
 bool ARPTable::addEntry(ARPEntry *arp_entry)
 {
-    ARPEntry *arp_entry_old = arpTableLookup(arp_entry->ip_addr);
+    const ARPEntry *arp_entry_old = lookup(arp_entry->ip_addr);
     // no need to add!
     if (arp_entry_old && memcmp(arp_entry_old, arp_entry, sizeof(ARPEntry)) == 0) {
         // caller need to free ARPEntry

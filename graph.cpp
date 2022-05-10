@@ -285,6 +285,27 @@ Interface *Node::getNodeInterfaceByName(const std::string &if_name)
     return *result;
 }
 
+Interface *Node::getNodeInterfaceByIPAddress(const IPAddress &ip_addr)
+{
+    auto result = std::find_if(
+        std::begin(intfs),
+        std::end(intfs),
+        [&](Interface *intf) {
+            if (!intf) {
+                return false;
+            }
+            if (!intf->isL3Mode()) {
+                return false;
+            }
+            return intf->getIPAddress() == ip_addr;
+        }
+    );
+    if (result == std::end(intfs)) {
+        return nullptr;
+    }
+    return *result;
+}
+
 Interface *Node::getMatchingSubnetInterface(const std::string &ip_addr)
 {
     IPAddress input_ip(ip_addr);
@@ -309,9 +330,13 @@ Interface *Node::getMatchingSubnetInterface(const std::string &ip_addr)
 }
 
 extern void addDirectRouteEntryToRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
+extern void deleteEntryFromRoutingTable(RoutingTable *routing_table, const std::string &ip_addr, char mask);
 
 bool Node::setLoopbackAddress(const std::string &ip_addr)
 {
+    if (isLoopbackAddressConfigured()) {
+        deleteEntryFromRoutingTable(const_cast<RoutingTable *>(this->getRoutingTable()), getLoopbackAddress(), 32);
+    }
     node_network_property.setLoopbackAddress(IPAddress(ip_addr));
     addDirectRouteEntryToRoutingTable(const_cast<RoutingTable *>(this->getRoutingTable()), ip_addr, 32);
     return true;

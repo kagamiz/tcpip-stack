@@ -285,6 +285,8 @@ public:
      */
     Interface *getNodeInterfaceByName(const std::string &if_name);
 
+    Interface *getNodeInterfaceByIPAddress(const IPAddress &ip_addr);
+
     /**
      * @brief Get the interface from the interface list whose subnet matches with given IP address.
      *
@@ -292,6 +294,16 @@ public:
      * @return returns an intreface whose subnet matches with the given IP address. Returns nullptr when none of the interface matches.
      */
     Interface *getMatchingSubnetInterface(const std::string &ip_addr);
+
+    bool isLoopbackAddressConfigured() const
+    {
+        return node_network_property.isLoopbackAddressConfigured();
+    }
+
+    const IPAddress &getLoopbackAddress() const
+    {
+        return node_network_property.getLoopbackAddress();
+    }
 
     /**
      * @brief Set the Node Loopback Address object.
